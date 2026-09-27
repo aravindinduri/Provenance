@@ -1,0 +1,214 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+
+jobs:
+  # ── Backend lint & type-check ──────────────────────────────────────────────
+  backend-lint:
+    name: Backend — lint & typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install deps
+        run: pip install -e ".[dev]"
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Mypy
+        run: mypy app workers ingestion agents --ignore-missing-imports
+
+      - name: Import linter (rules 14 + 16)
+        run: lint-imports
+
+  # ── Backend tests ──────────────────────────────────────────────────────────
+  backend-test:
+    name: Backend — unit & integration tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: provenance
+          POSTGRES_PASSWORD: provenance
+          POSTGRES_DB: provenance_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U provenance -d provenance_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      ENVIRONMENT: local
+      DATABASE_URL: postgresql+asyncpg://provenance:provenance@localhost:5432/provenance_test
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/1
+      CELERY_RESULT_BACKEND: redis://localhost:6379/2
+      SECRET_KEY: ci-test-secret-key
+      LOG_LEVEL: WARNING
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install deps
+        run: pip install -e ".[dev]"
+
+      - name: Run migrations
+        run: alembic upgrade head
+        working-directory: backend
+
+      - name: Pytest
+        run: pytest tests/ -x --cov=app --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/coverage.xml
+          flags: backend
+
+  # ── Security scans ─────────────────────────────────────────────────────────
+  security:
+    name: Security scans
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gitleaks (secret scan)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: pip-audit
+        working-directory: backend
+        run: |
+          pip install pip-audit
+          pip install -e ".[dev]"
+          pip-audit
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
+  # ── Frontend lint & typecheck ──────────────────────────────────────────────
+  frontend-lint:
+    name: Frontend — lint & typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+  # ── Frontend unit tests ────────────────────────────────────────────────────
+  frontend-test:
+    name: Frontend — unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Vitest
+        run: npm test
+
+  # ── OpenAPI client drift check ─────────────────────────────────────────────
+  # Disabled until Phase 5 (api + frontend both exist)
+  # openapi-drift:
+  #   needs: [backend-test]
+  #   steps:
+  #     - run: npm run generate:api
+  #     - run: git diff --exit-code src/lib/api/generated.ts
+
+  # ── Gate: all jobs must pass ───────────────────────────────────────────────
+  ci-gate:
+    name: CI gate
+    needs: [backend-lint, backend-test, security, frontend-lint, frontend-test]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "One or more CI jobs failed."
+            exit 1
+          fi
+          echo "All CI jobs passed."

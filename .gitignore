@@ -1,0 +1,200 @@
+# =============================================================================
+# Provenance — .gitignore
+# Stack: Python 3.12 / FastAPI / Celery · Next.js 15 / TypeScript · Terraform
+# =============================================================================
+
+
+# =============================================================================
+# SECRETS — never commit
+# =============================================================================
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+terraform/*.tfvars
+terraform/**/*.tfvars
+!terraform/environments/example.tfvars
+
+
+# =============================================================================
+# Python
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+backend/.venv/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+.eggs/
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+nosetests.xml
+pytest-results.xml
+
+# Mypy / ruff caches
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+
+# Import-linter
+.import_linter_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# pyinstaller
+*.manifest
+*.spec
+
+
+# =============================================================================
+# Node / Next.js / TypeScript
+# =============================================================================
+node_modules/
+frontend/node_modules/
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+
+# TypeScript compilation
+*.tsbuildinfo
+frontend/.tsbuildinfo
+
+# Vitest / Playwright
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+frontend/.playwright/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+
+# Generated API client — rebuilt in CI from OpenAPI schema; never hand-edit
+frontend/src/lib/api/generated/
+
+# Package manager locks are committed — ignore only build caches
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+
+
+# =============================================================================
+# Terraform
+# =============================================================================
+infrastructure/terraform/.terraform/
+infrastructure/terraform/**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform.lock.hcl
+infrastructure/terraform/**/.terraform.lock.hcl
+# Keep example and module sources
+!infrastructure/terraform/modules/**
+
+
+# =============================================================================
+# Docker
+# =============================================================================
+# Don't ignore Dockerfiles or compose files — those are source.
+# Ignore only generated/local overrides.
+docker-compose.override.yml
+docker-compose.local.yml
+
+
+# =============================================================================
+# Databases / migrations (keep source, ignore generated artefacts)
+# =============================================================================
+# SQLite (local testing only)
+*.sqlite3
+*.db
+
+# Alembic auto-generated SQL scripts (not the migration files themselves)
+database/migrations/versions/*.sql
+
+
+# =============================================================================
+# IDEs and editors
+# =============================================================================
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+
+# =============================================================================
+# OS
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+
+# =============================================================================
+# Logs and temp files
+# =============================================================================
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+
+
+# =============================================================================
+# AWS / cloud credentials (belt-and-suspenders; should never be in the repo)
+# =============================================================================
+.aws/
+*.credentials
+aws-exports.js
+
+
+# =============================================================================
+# Langfuse / observability local data
+# =============================================================================
+langfuse-data/
+
+
+# =============================================================================
+# Local scripts output and exports
+# =============================================================================
+exports/
+*.export.json
+*.export.csv
