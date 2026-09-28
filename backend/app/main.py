@@ -11,10 +11,17 @@ from typing import AsyncGenerator
 
 import structlog
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.auth.base import AuthenticationError, AuthorizationError
 from app.config import get_settings
+from app.core.errors import (
+    authentication_error_handler,
+    authorization_error_handler,
+    validation_exception_handler,
+)
 from app.core.logging import configure_logging
 
 logger = structlog.get_logger(__name__)
@@ -47,7 +54,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # ── CORS ────────────────────────────────────────────────────────────────
+    # ── CORS ─────────────────────────────────────────────────────────────────
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origins_list,
@@ -56,10 +63,26 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # ── Routers ─────────────────────────────────────────────────────────────
-    from app.api.v1.health import router as health_router
+    # ── Request ID middleware ─────────────────────────────────────────────────
+    from app.core.middleware import RequestIdMiddleware
+    application.add_middleware(RequestIdMiddleware)
 
+    # ── Exception handlers ────────────────────────────────────────────────────
+    application.add_exception_handler(AuthenticationError, authentication_error_handler)  # type: ignore[arg-type]
+    application.add_exception_handler(AuthorizationError, authorization_error_handler)  # type: ignore[arg-type]
+    application.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
+
+    # ── Routers ───────────────────────────────────────────────────────────────
+    from app.api.v1.health import router as health_router
+    from app.api.v1.auth import router as auth_router
+    from app.api.v1.organizations import router as orgs_router
+    from app.api.v1.webhooks import router as webhooks_router
+
+    api_prefix = "/v1"
     application.include_router(health_router)
+    application.include_router(auth_router, prefix=api_prefix)
+    application.include_router(orgs_router, prefix=api_prefix)
+    application.include_router(webhooks_router, prefix=api_prefix)
 
     return application
 
