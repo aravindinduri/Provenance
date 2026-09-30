@@ -96,6 +96,32 @@ def conflict(request: Request, detail: str = "Resource already exists") -> JSONR
     )
 
 
+def bad_request(request: Request, detail: str = "Bad request") -> JSONResponse:
+    return _problem(
+        request,
+        type_slug="bad-request",
+        title="Bad Request",
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=detail,
+    )
+
+
+def rate_limit_exceeded(
+    request: Request,
+    detail: str = "Rate limit exceeded",
+    retry_after: int = 60,
+) -> JSONResponse:
+    res = _problem(
+        request,
+        type_slug="rate-limit-exceeded",
+        title="Rate Limit Exceeded",
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail=detail,
+    )
+    res.headers["Retry-After"] = str(retry_after)
+    return res
+
+
 def unprocessable(
     request: Request,
     detail: str = "Validation failed",
@@ -124,6 +150,8 @@ def internal_error(request: Request, detail: str = "An unexpected error occurred
 # ── FastAPI exception handlers ────────────────────────────────────────────────
 # Register these with app.add_exception_handler() in main.py
 
+from slowapi.errors import RateLimitExceeded  # noqa: E402
+
 from app.auth.base import AuthenticationError, AuthorizationError  # noqa: E402
 
 
@@ -135,6 +163,16 @@ async def authentication_error_handler(request: Request, exc: Exception) -> JSON
 async def authorization_error_handler(request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, AuthorizationError)
     return forbidden(request, detail=exc.detail)
+
+
+async def rate_limit_exceeded_handler(request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, RateLimitExceeded)
+    retry_after = 60
+    return rate_limit_exceeded(
+        request,
+        detail=f"Rate limit exceeded: {exc.detail}",
+        retry_after=retry_after,
+    )
 
 
 async def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:

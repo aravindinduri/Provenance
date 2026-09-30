@@ -67,22 +67,38 @@ def create_app() -> FastAPI:
     from app.core.middleware import RequestIdMiddleware
     application.add_middleware(RequestIdMiddleware)
 
+    # ── Rate limiting ────────────────────────────────────────────────────────
+    from slowapi.errors import RateLimitExceeded
+    from slowapi.middleware import SlowAPIMiddleware
+    from app.core.limiter import limiter
+    from app.core.errors import rate_limit_exceeded_handler
+
+    application.state.limiter = limiter
+    application.add_middleware(SlowAPIMiddleware)
+
     # ── Exception handlers ────────────────────────────────────────────────────
     application.add_exception_handler(AuthenticationError, authentication_error_handler)  # type: ignore[arg-type]
     application.add_exception_handler(AuthorizationError, authorization_error_handler)  # type: ignore[arg-type]
     application.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
+    application.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
     # ── Routers ───────────────────────────────────────────────────────────────
     from app.api.v1.health import router as health_router
     from app.api.v1.auth import router as auth_router
     from app.api.v1.organizations import router as orgs_router
     from app.api.v1.webhooks import router as webhooks_router
+    from app.api.v1.companies import router as companies_router
+    from app.api.v1.suppliers import router as suppliers_router
+    from app.api.v1.relationships import router as relationships_router
 
     api_prefix = "/v1"
     application.include_router(health_router)
     application.include_router(auth_router, prefix=api_prefix)
     application.include_router(orgs_router, prefix=api_prefix)
     application.include_router(webhooks_router, prefix=api_prefix)
+    application.include_router(companies_router, prefix=api_prefix)
+    application.include_router(suppliers_router, prefix=api_prefix)
+    application.include_router(relationships_router, prefix=api_prefix)
 
     return application
 

@@ -81,7 +81,7 @@ class Company(AuditMixin, SoftDeleteMixin, Base):
         DateTime(timezone=True), nullable=True
     )
 
-    # Overall data-quality confidence (0–1)
+    # Overall data-quality confidence (0-1)
     confidence: Mapped[float] = mapped_column(
         Numeric(3, 2), nullable=False, server_default=text("1.0")
     )
@@ -151,7 +151,7 @@ class CompanyIdentifier(AuditMixin, Base):
 class CompanyAlias(AuditMixin, Base):
     """
     Known alternate names for a company (trade names, former names, abbreviations).
-    Used by ER Stages 3–5.
+    Used by ER Stages 3-5.
     """
 
     __tablename__ = "company_aliases"
@@ -230,4 +230,7 @@ class EntityResolutionReview(AuditMixin, Base):
     )
 
     def __repr__(self) -> str:
-        return f"<EntityResolutionReview id={self.id} status={self.status!r} name={self.raw_name!r}>"
+        return (
+            f"<EntityResolutionReview id={self.id} status={self.status!r} "
+            f"name={self.raw_name!r}>"
+        )

@@ -15,7 +15,6 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
-    ARRAY,
     Boolean,
     CheckConstraint,
     Date,

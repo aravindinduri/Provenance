@@ -53,10 +53,10 @@ def _async_url() -> str:
         "postgresql+asyncpg://provenance:provenance@localhost:5432/provenance_test",
     )
     # ensure asyncpg driver
-    return re.sub(r"^postgresql(\+psycopg2)?", "postgresql+asyncpg", url)
+    return re.sub(r"^postgresql(\+[^:]+)?", "postgresql+asyncpg", url)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 async def async_engine():
     engine = create_async_engine(_async_url(), echo=False)
     yield engine

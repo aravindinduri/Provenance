@@ -14,12 +14,12 @@
  */
 
 import { useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAppAuth } from "@/lib/auth/clerk-adapter";
 import { useMe } from "@/lib/hooks/use-me";
 import { useUserStore } from "@/lib/store/user-store";
 
 export function UserStoreSync() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useAppAuth();
   const { data: me } = useMe();
   const { setFromMe, clear } = useUserStore();
 

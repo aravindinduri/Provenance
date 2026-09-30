@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.base import AuthorizationError, CurrentUser
@@ -178,6 +178,7 @@ async def update_member(
 @router.delete(
     "/{org_id}/members/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
     summary="Remove a member from the organization",
 )
 async def remove_member(
@@ -186,7 +187,7 @@ async def remove_member(
     user_id: str,
     current_user: CurrentUser = Depends(require_permission("members:write")),
     db: AsyncSession = Depends(get_db),
-) -> None:
+) -> Response:
     svc = _service(db)
     try:
         await svc.remove_member(org_id, user_id, current_user=current_user)
@@ -197,3 +198,4 @@ async def remove_member(
     except AuthorizationError as exc:
         return forbidden(request, detail=exc.detail)  # type: ignore[return-value]
     await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

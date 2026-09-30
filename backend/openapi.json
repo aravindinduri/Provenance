@@ -1,0 +1,3093 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Provenance API",
+    "description": "Supply-chain risk intelligence platform.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness probe",
+        "description": "Always returns 200 while the process is running.",
+        "operationId": "health_liveness_health_get",
+        "responses": {
+          "200": {
+            "description": "Service is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Health Liveness Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Readiness probe",
+        "description": "Checks that the database and Redis are reachable.\nReturns 200 if ready, 503 if any dependency is unavailable.",
+        "operationId": "health_readiness_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Service can accept traffic",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Current authenticated user + org context",
+        "description": "Returns the resolved CurrentUser and their organization record.\n\nThis is the canonical first call a frontend makes after sign-in to\ndiscover the user's org UUID, role, and persona.",
+        "operationId": "get_me_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/organizations/{org_id}": {
+      "get": {
+        "tags": [
+          "organizations"
+        ],
+        "summary": "Get organization",
+        "operationId": "get_organization_v1_organizations__org_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "organizations"
+        ],
+        "summary": "Update organization settings",
+        "operationId": "update_organization_v1_organizations__org_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/organizations/{org_id}/members": {
+      "get": {
+        "tags": [
+          "organizations"
+        ],
+        "summary": "List organization members",
+        "operationId": "list_members_v1_organizations__org_id__members_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedMembers"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "organizations"
+        ],
+        "summary": "Invite a member",
+        "operationId": "invite_member_v1_organizations__org_id__members_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberInvite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/organizations/{org_id}/members/{user_id}": {
+      "patch": {
+        "tags": [
+          "organizations"
+        ],
+        "summary": "Update a member's role or persona",
+        "operationId": "update_member_v1_organizations__org_id__members__user_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "organizations"
+        ],
+        "summary": "Remove a member from the organization",
+        "operationId": "remove_member_v1_organizations__org_id__members__user_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/companies/search": {
+      "get": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Search canonical companies",
+        "operationId": "search_companies_v1_companies_search_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search term for company legal name",
+              "title": "Q"
+            },
+            "description": "Search term for company legal name"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 2
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "2-letter ISO country code",
+              "title": "Country"
+            },
+            "description": "2-letter ISO country code"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Page limit (max 100)",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Page limit (max 100)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedCompanies"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/companies/{company_id}": {
+      "get": {
+        "tags": [
+          "companies"
+        ],
+        "summary": "Get enriched company profile",
+        "operationId": "get_company_v1_companies__company_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/suppliers": {
+      "get": {
+        "tags": [
+          "suppliers"
+        ],
+        "summary": "List organization suppliers",
+        "operationId": "list_suppliers_v1_suppliers_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by category",
+              "title": "Category"
+            },
+            "description": "Filter by category"
+          },
+          {
+            "name": "criticality",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 5,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by criticality (1-5)",
+              "title": "Criticality"
+            },
+            "description": "Filter by criticality (1-5)"
+          },
+          {
+            "name": "tier",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 10,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by tier",
+              "title": "Tier"
+            },
+            "description": "Filter by tier"
+          },
+          {
+            "name": "active_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only return active suppliers",
+              "default": true,
+              "title": "Active Only"
+            },
+            "description": "Only return active suppliers"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Page limit (max 100)",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Page limit (max 100)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedSuppliers"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "suppliers"
+        ],
+        "summary": "Add a supplier to the organization",
+        "operationId": "create_supplier_v1_suppliers_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplierCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/suppliers/{supplier_id}": {
+      "get": {
+        "tags": [
+          "suppliers"
+        ],
+        "summary": "Get supplier details",
+        "operationId": "get_supplier_v1_suppliers__supplier_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplier_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Supplier Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "suppliers"
+        ],
+        "summary": "Update supplier attributes",
+        "operationId": "update_supplier_v1_suppliers__supplier_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplier_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Supplier Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplierUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "suppliers"
+        ],
+        "summary": "Soft-delete supplier",
+        "operationId": "delete_supplier_v1_suppliers__supplier_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplier_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Supplier Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/relationships": {
+      "get": {
+        "tags": [
+          "relationships"
+        ],
+        "summary": "List organization graph relationships",
+        "operationId": "list_relationships_v1_relationships_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "relationship_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by relationship type",
+              "title": "Relationship Type"
+            },
+            "description": "Filter by relationship type"
+          },
+          {
+            "name": "from_company_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by source company",
+              "title": "From Company Id"
+            },
+            "description": "Filter by source company"
+          },
+          {
+            "name": "to_company_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by target company",
+              "title": "To Company Id"
+            },
+            "description": "Filter by target company"
+          },
+          {
+            "name": "tier",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 10,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by tier",
+              "title": "Tier"
+            },
+            "description": "Filter by tier"
+          },
+          {
+            "name": "active_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only return active relationships",
+              "default": true,
+              "title": "Active Only"
+            },
+            "description": "Only return active relationships"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Page limit (max 100)",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Page limit (max 100)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedRelationships"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "relationships"
+        ],
+        "summary": "Create a graph relationship edge",
+        "operationId": "create_relationship_v1_relationships_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RelationshipCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/relationships/{relationship_id}": {
+      "get": {
+        "tags": [
+          "relationships"
+        ],
+        "summary": "Get relationship details",
+        "operationId": "get_relationship_v1_relationships__relationship_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "relationship_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Relationship Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "relationships"
+        ],
+        "summary": "Update relationship attributes",
+        "operationId": "update_relationship_v1_relationships__relationship_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "relationship_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Relationship Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RelationshipUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "relationships"
+        ],
+        "summary": "Soft-delete relationship",
+        "operationId": "delete_relationship_v1_relationships__relationship_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "relationship_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Relationship Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CompanyAliasOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "alias": {
+            "type": "string",
+            "title": "Alias"
+          },
+          "alias_norm": {
+            "type": "string",
+            "title": "Alias Norm"
+          },
+          "alias_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alias Type"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "alias",
+          "alias_norm"
+        ],
+        "title": "CompanyAliasOut"
+      },
+      "CompanyDetailOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "legal_name": {
+            "type": "string",
+            "title": "Legal Name"
+          },
+          "name_norm": {
+            "type": "string",
+            "title": "Name Norm"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jurisdiction"
+          },
+          "legal_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legal Form"
+          },
+          "entity_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Status"
+          },
+          "primary_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Domain"
+          },
+          "industry_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Industry Codes"
+          },
+          "data_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Source"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "is_verified": {
+            "type": "boolean",
+            "title": "Is Verified",
+            "default": false
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "registered_address": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registered Address"
+          },
+          "hq_address": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hq Address"
+          },
+          "last_enriched_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Enriched At"
+          },
+          "identifiers": {
+            "items": {
+              "$ref": "#/components/schemas/CompanyIdentifierOut"
+            },
+            "type": "array",
+            "title": "Identifiers"
+          },
+          "aliases": {
+            "items": {
+              "$ref": "#/components/schemas/CompanyAliasOut"
+            },
+            "type": "array",
+            "title": "Aliases"
+          },
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/CompanyLocationOut"
+            },
+            "type": "array",
+            "title": "Locations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "legal_name",
+          "name_norm",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CompanyDetailOut"
+      },
+      "CompanyIdentifierOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "identifier_type": {
+            "type": "string",
+            "title": "Identifier Type"
+          },
+          "identifier_value": {
+            "type": "string",
+            "title": "Identifier Value"
+          },
+          "issuing_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issuing Country"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verified At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "identifier_type",
+          "identifier_value"
+        ],
+        "title": "CompanyIdentifierOut"
+      },
+      "CompanyLocationOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "site_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Type"
+          },
+          "is_primary": {
+            "type": "boolean",
+            "title": "Is Primary",
+            "default": false
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "valid_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LocationOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "location"
+        ],
+        "title": "CompanyLocationOut"
+      },
+      "CompanySummaryOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "legal_name": {
+            "type": "string",
+            "title": "Legal Name"
+          },
+          "name_norm": {
+            "type": "string",
+            "title": "Name Norm"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jurisdiction"
+          },
+          "legal_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legal Form"
+          },
+          "entity_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Status"
+          },
+          "primary_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Domain"
+          },
+          "industry_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Industry Codes"
+          },
+          "data_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Source"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "is_verified": {
+            "type": "boolean",
+            "title": "Is Verified",
+            "default": false
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "legal_name",
+          "name_norm",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CompanySummaryOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LocationOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lon": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lon"
+          },
+          "geohash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geohash"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "country"
+        ],
+        "title": "LocationOut"
+      },
+      "MeOut": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "org_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Org Id"
+          },
+          "clerk_org_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clerk Org Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "persona": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona"
+          },
+          "assigned_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Assigned Categories"
+          },
+          "organization": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrganizationOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "email",
+          "org_id",
+          "clerk_org_id",
+          "role",
+          "persona",
+          "assigned_categories",
+          "organization"
+        ],
+        "title": "MeOut",
+        "description": "What GET /auth/me returns \u2014 combines the JWT principal with org context."
+      },
+      "MemberInvite": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "Clerk user ID of the invitee"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "description": "One of: org_admin, analyst, org_user, read_only",
+            "default": "org_user"
+          },
+          "persona": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona",
+            "description": "UX persona hint: risk_manager, category_manager, or other"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "MemberInvite",
+        "description": "Invite a user to an organization."
+      },
+      "MemberOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "persona": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona"
+          },
+          "assigned_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Assigned Categories"
+          },
+          "invited_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invited At"
+          },
+          "joined_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Joined At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "role",
+          "persona",
+          "assigned_categories",
+          "invited_at",
+          "joined_at",
+          "created_at"
+        ],
+        "title": "MemberOut",
+        "description": "A single organization member as returned by the API."
+      },
+      "MemberUpdate": {
+        "properties": {
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "persona": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona"
+          },
+          "assigned_categories": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Categories"
+          }
+        },
+        "type": "object",
+        "title": "MemberUpdate",
+        "description": "Update role or persona for an existing member."
+      },
+      "OrganizationOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "clerk_org_id": {
+            "type": "string",
+            "title": "Clerk Org Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "company_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Id"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "subscription_tier": {
+            "type": "string",
+            "title": "Subscription Tier"
+          },
+          "monthly_token_budget": {
+            "type": "integer",
+            "title": "Monthly Token Budget"
+          },
+          "onboarding_completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onboarding Completed At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "clerk_org_id",
+          "name",
+          "slug",
+          "company_id",
+          "industry",
+          "country",
+          "subscription_tier",
+          "monthly_token_budget",
+          "onboarding_completed_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "OrganizationOut",
+        "description": "Organization record returned to clients."
+      },
+      "OrganizationUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "settings": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settings"
+          }
+        },
+        "type": "object",
+        "title": "OrganizationUpdate",
+        "description": "Fields a caller may PATCH on an organization."
+      },
+      "PaginatedCompanies": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CompanySummaryOut"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "PaginatedCompanies"
+      },
+      "PaginatedMembers": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/MemberOut"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "total"
+        ],
+        "title": "PaginatedMembers"
+      },
+      "PaginatedRelationships": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipOut"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "PaginatedRelationships"
+      },
+      "PaginatedSuppliers": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SupplierOut"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "PaginatedSuppliers"
+      },
+      "PaginationMeta": {
+        "properties": {
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Opaque cursor token to pass to ?cursor= to fetch the next page"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "description": "True if there are more records beyond this page",
+            "default": false
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total",
+            "description": "Optional total count of matching records across all pages"
+          }
+        },
+        "type": "object",
+        "title": "PaginationMeta",
+        "description": "Metadata describing the pagination state."
+      },
+      "RelationshipCreate": {
+        "properties": {
+          "from_company_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "From Company Id"
+          },
+          "to_company_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Company Id"
+          },
+          "to_org_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Org Id"
+          },
+          "relationship_type": {
+            "type": "string",
+            "title": "Relationship Type",
+            "description": "supplies_to | sub_supplies_to | owned_by | located_in",
+            "default": "supplies_to"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "criticality": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criticality"
+          },
+          "annual_spend_usd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Spend Usd"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "single_source": {
+            "type": "boolean",
+            "title": "Single Source",
+            "default": false
+          },
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "user_declared"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_company_id"
+        ],
+        "title": "RelationshipCreate"
+      },
+      "RelationshipOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "org_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Org Id"
+          },
+          "from_company_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "From Company Id"
+          },
+          "from_company": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanySummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_company_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Company Id"
+          },
+          "to_company": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanySummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_org_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Org Id"
+          },
+          "relationship_type": {
+            "type": "string",
+            "title": "Relationship Type"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "criticality": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criticality"
+          },
+          "annual_spend_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Spend Usd"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "single_source": {
+            "type": "boolean",
+            "title": "Single Source",
+            "default": false
+          },
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "user_declared"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "org_id",
+          "from_company_id",
+          "relationship_type",
+          "valid_from",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "RelationshipOut"
+      },
+      "RelationshipUpdate": {
+        "properties": {
+          "relationship_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relationship Type"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "criticality": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criticality"
+          },
+          "annual_spend_usd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Spend Usd"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "single_source": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Single Source"
+          },
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          }
+        },
+        "type": "object",
+        "title": "RelationshipUpdate"
+      },
+      "SupplierCreate": {
+        "properties": {
+          "company_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Id"
+          },
+          "legal_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legal Name"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "primary_domain": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Domain"
+          },
+          "tier": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Tier",
+            "default": 1
+          },
+          "criticality": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Criticality",
+            "default": 3
+          },
+          "annual_spend_usd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Spend Usd"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "single_source": {
+            "type": "boolean",
+            "title": "Single Source",
+            "default": false
+          },
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "user_declared"
+          }
+        },
+        "type": "object",
+        "title": "SupplierCreate"
+      },
+      "SupplierOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "org_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Org Id"
+          },
+          "company_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Company Id"
+          },
+          "company": {
+            "$ref": "#/components/schemas/CompanySummaryOut"
+          },
+          "relationship_type": {
+            "type": "string",
+            "title": "Relationship Type"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier",
+            "default": 1
+          },
+          "criticality": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criticality"
+          },
+          "annual_spend_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Spend Usd"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "single_source": {
+            "type": "boolean",
+            "title": "Single Source",
+            "default": false
+          },
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "user_declared"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "org_id",
+          "company_id",
+          "company",
+          "relationship_type",
+          "valid_from",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SupplierOut"
+      },
+      "SupplierUpdate": {
+        "properties": {
+          "criticality": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criticality"
+          },
+          "annual_spend_usd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Spend Usd"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "single_source": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Single Source"
+          },
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          }
+        },
+        "type": "object",
+        "title": "SupplierUpdate"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
