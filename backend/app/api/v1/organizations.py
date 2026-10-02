@@ -33,6 +33,7 @@ from app.modules.organizations.schemas import (
     OrganizationUpdate,
     PaginatedMembers,
 )
+from app.modules.companies.service import CompanyNotFound
 from app.modules.organizations.service import (
     MemberAlreadyExists,
     MemberNotFound,
@@ -89,6 +90,8 @@ async def update_organization(
         org = await svc.update_org(org_id, payload, current_user=current_user)
     except OrganizationNotFound:
         return not_found(request, detail=f"Organization {org_id} not found")  # type: ignore[return-value]
+    except CompanyNotFound as exc:
+        return not_found(request, detail=str(exc))  # type: ignore[return-value]
     except AuthorizationError as exc:
         return forbidden(request, detail=exc.detail)  # type: ignore[return-value]
     await db.commit()

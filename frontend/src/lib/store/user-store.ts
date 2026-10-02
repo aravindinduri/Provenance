@@ -76,6 +76,10 @@ interface UserState {
   orgName: string | null;
   orgSlug: string | null;
   subscriptionTier: string | null;
+  companyId: string | null;
+  onboardingCompletedAt: string | null;
+  isOnboarded: boolean;
+  organization: MeOut["organization"] | null;
 
   // Derived helpers
   isLoaded: boolean;
@@ -103,6 +107,10 @@ export const useUserStore = create<UserState>((set, get) => ({
   orgName: null,
   orgSlug: null,
   subscriptionTier: null,
+  companyId: null,
+  onboardingCompletedAt: null,
+  isOnboarded: false,
+  organization: null,
 
   isLoaded: false,
   isPlatformAdmin: false,
@@ -121,6 +129,10 @@ export const useUserStore = create<UserState>((set, get) => ({
       orgName: me.organization?.name ?? null,
       orgSlug: me.organization?.slug ?? null,
       subscriptionTier: me.organization?.subscription_tier ?? null,
+      companyId: me.organization?.company_id ?? null,
+      onboardingCompletedAt: me.organization?.onboarding_completed_at ?? null,
+      isOnboarded: Boolean(me.organization?.onboarding_completed_at),
+      organization: me.organization ?? null,
       isLoaded: true,
       isPlatformAdmin: me.role === "platform_admin",
     }),
@@ -137,6 +149,10 @@ export const useUserStore = create<UserState>((set, get) => ({
       orgName: null,
       orgSlug: null,
       subscriptionTier: null,
+      companyId: null,
+      onboardingCompletedAt: null,
+      isOnboarded: false,
+      organization: null,
       isLoaded: false,
       isPlatformAdmin: false,
     }),

@@ -739,6 +739,80 @@
         }
       }
     },
+    "/v1/suppliers/bulk": {
+      "post": {
+        "tags": [
+          "suppliers"
+        ],
+        "summary": "Bulk add suppliers via CSV or JSON (async, returns job_id)",
+        "operationId": "bulk_create_suppliers_v1_suppliers_bulk_post",
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkSupplierJobOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/suppliers/bulk/{job_id}": {
+      "get": {
+        "tags": [
+          "suppliers"
+        ],
+        "summary": "Get bulk supplier import job status and progress",
+        "operationId": "get_bulk_supplier_job_v1_suppliers_bulk__job_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkSupplierJobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/suppliers/{supplier_id}": {
       "get": {
         "tags": [
@@ -769,7 +843,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SupplierOut"
+                  "$ref": "#/components/schemas/SupplierDetailOut"
                 }
               }
             }
@@ -1226,10 +1300,298 @@
           }
         }
       }
+    },
+    "/v1/graph": {
+      "get": {
+        "tags": [
+          "graph"
+        ],
+        "summary": "Get supply chain topology graph for visualization",
+        "description": "Traverses the tenant's supply network using recursive CTE with cycle guard, depth cap (1-5), and node cap.",
+        "operationId": "get_graph_v1_graph_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "root",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional root company ID to center traversal around",
+              "title": "Root"
+            },
+            "description": "Optional root company ID to center traversal around"
+          },
+          {
+            "name": "depth",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5,
+              "minimum": 1,
+              "description": "Traversal depth cap (1-5, default 3)",
+              "default": 3,
+              "title": "Depth"
+            },
+            "description": "Traversal depth cap (1-5, default 3)"
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated relationship types (e.g. supplies_to,sub_supplies_to,owned_by,located_in)",
+              "title": "Types"
+            },
+            "description": "Comma-separated relationship types (e.g. supplies_to,sub_supplies_to,owned_by,located_in)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "description": "Node/edge payload cap (default 300, max 5000)",
+              "default": 300,
+              "title": "Limit"
+            },
+            "description": "Node/edge payload cap (default 300, max 5000)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphData"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/graph/paths": {
+      "get": {
+        "tags": [
+          "graph"
+        ],
+        "summary": "Find and explain exposure paths between entities",
+        "description": "Traces multi-tier directed paths from an upstream company to the tenant organization or downstream target.",
+        "operationId": "get_graph_paths_v1_graph_paths_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Source company ID",
+              "title": "From"
+            },
+            "description": "Source company ID"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Target company or org ID (defaults to org)",
+              "title": "To"
+            },
+            "description": "Target company or org ID (defaults to org)"
+          },
+          {
+            "name": "max_depth",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5,
+              "minimum": 1,
+              "description": "Maximum traversal depth (1-5, default 5)",
+              "default": 5,
+              "title": "Max Depth"
+            },
+            "description": "Maximum traversal depth (1-5, default 5)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphPathsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "BulkRowError": {
+        "properties": {
+          "row": {
+            "type": "integer",
+            "title": "Row"
+          },
+          "legal_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legal Name"
+          },
+          "error": {
+            "type": "string",
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row",
+          "error"
+        ],
+        "title": "BulkRowError"
+      },
+      "BulkSupplierJobOut": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Job Id"
+          },
+          "org_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Org Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "pending | processing | completed | failed"
+          },
+          "total_rows": {
+            "type": "integer",
+            "title": "Total Rows",
+            "default": 0
+          },
+          "processed_rows": {
+            "type": "integer",
+            "title": "Processed Rows",
+            "default": 0
+          },
+          "successful_rows": {
+            "type": "integer",
+            "title": "Successful Rows",
+            "default": 0
+          },
+          "failed_rows": {
+            "type": "integer",
+            "title": "Failed Rows",
+            "default": 0
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/BulkRowError"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "org_id",
+          "status",
+          "created_at"
+        ],
+        "title": "BulkSupplierJobOut"
+      },
       "CompanyAliasOut": {
         "properties": {
           "id": {
@@ -1712,6 +2074,374 @@
         ],
         "title": "CompanySummaryOut"
       },
+      "GraphData": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEdge"
+            },
+            "type": "array",
+            "title": "Edges"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/GraphMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meta"
+        ],
+        "title": "GraphData"
+      },
+      "GraphEdge": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique edge identifier"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Source node id"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target",
+            "description": "Target node id"
+          },
+          "relationship_type": {
+            "type": "string",
+            "title": "Relationship Type",
+            "description": "supplies_to | sub_supplies_to | owned_by | located_in"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "criticality": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criticality"
+          },
+          "annual_spend_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Spend Usd"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "source_type": {
+            "type": "string",
+            "title": "Source Type",
+            "description": "user_declared | gleif | inferred | document",
+            "default": "user_declared"
+          },
+          "single_source": {
+            "type": "boolean",
+            "title": "Single Source",
+            "default": false
+          },
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "target",
+          "relationship_type"
+        ],
+        "title": "GraphEdge"
+      },
+      "GraphMetadata": {
+        "properties": {
+          "root_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Root Id"
+          },
+          "depth": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Depth",
+            "default": 3
+          },
+          "node_count": {
+            "type": "integer",
+            "title": "Node Count",
+            "default": 0
+          },
+          "edge_count": {
+            "type": "integer",
+            "title": "Edge Count",
+            "default": 0
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "GraphMetadata"
+      },
+      "GraphNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique node identifier for graph rendering (e.g. comp_<uuid>, org_<uuid>)"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id",
+            "description": "Raw database entity UUID"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human-readable node label / legal name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "organization | company | location",
+            "default": "company"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "risk_level": {
+            "type": "string",
+            "title": "Risk Level",
+            "description": "CRITICAL | HIGH | MEDIUM | LOW | UNKNOWN",
+            "default": "UNKNOWN"
+          },
+          "risk_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risk Score"
+          },
+          "annual_spend_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Spend Usd"
+          },
+          "criticality": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criticality"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "single_source": {
+            "type": "boolean",
+            "title": "Single Source",
+            "default": false
+          },
+          "metadata": {
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "GraphNode"
+      },
+      "GraphPath": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
+            },
+            "type": "array",
+            "title": "Nodes",
+            "description": "Ordered sequence of nodes from source to target"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEdge"
+            },
+            "type": "array",
+            "title": "Edges",
+            "description": "Ordered sequence of connecting edges"
+          },
+          "depth": {
+            "type": "integer",
+            "title": "Depth",
+            "description": "Total hops in path"
+          },
+          "path_confidence": {
+            "type": "number",
+            "title": "Path Confidence",
+            "description": "Cumulative path confidence (product of edge confidences)"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation",
+            "description": "Deterministic natural explanation of the exposure connection"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nodes",
+          "edges",
+          "depth",
+          "path_confidence",
+          "explanation"
+        ],
+        "title": "GraphPath"
+      },
+      "GraphPathsResponse": {
+        "properties": {
+          "from_node": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GraphNode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_node": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GraphNode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paths": {
+            "items": {
+              "$ref": "#/components/schemas/GraphPath"
+            },
+            "type": "array",
+            "title": "Paths"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary"
+        ],
+        "title": "GraphPathsResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2179,6 +2909,29 @@
               }
             ],
             "title": "Country"
+          },
+          "company_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Id"
+          },
+          "onboarding_completed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onboarding Completed"
           },
           "settings": {
             "anyOf": [
@@ -2834,6 +3587,152 @@
         },
         "type": "object",
         "title": "SupplierCreate"
+      },
+      "SupplierDetailOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "org_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Org Id"
+          },
+          "company_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Company Id"
+          },
+          "company": {
+            "$ref": "#/components/schemas/CompanySummaryOut"
+          },
+          "relationship_type": {
+            "type": "string",
+            "title": "Relationship Type"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier",
+            "default": 1
+          },
+          "criticality": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criticality"
+          },
+          "annual_spend_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Annual Spend Usd"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "single_source": {
+            "type": "boolean",
+            "title": "Single Source",
+            "default": false
+          },
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "user_declared"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "company_detail": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyDetailOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "org_id",
+          "company_id",
+          "company",
+          "relationship_type",
+          "valid_from",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SupplierDetailOut"
       },
       "SupplierOut": {
         "properties": {

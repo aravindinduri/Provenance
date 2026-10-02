@@ -174,6 +174,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/suppliers/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk add suppliers via CSV or JSON (async, returns job_id) */
+        post: operations["bulk_create_suppliers_v1_suppliers_bulk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/suppliers/bulk/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get bulk supplier import job status and progress */
+        get: operations["get_bulk_supplier_job_v1_suppliers_bulk__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/suppliers/{supplier_id}": {
         parameters: {
             query?: never;
@@ -230,10 +264,106 @@ export interface paths {
         patch: operations["update_relationship_v1_relationships__relationship_id__patch"];
         trace?: never;
     };
+    "/v1/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get supply chain topology graph for visualization
+         * @description Traverses the tenant's supply network using recursive CTE with cycle guard, depth cap (1-5), and node cap.
+         */
+        get: operations["get_graph_v1_graph_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/graph/paths": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find and explain exposure paths between entities
+         * @description Traces multi-tier directed paths from an upstream company to the tenant organization or downstream target.
+         */
+        get: operations["get_graph_paths_v1_graph_paths_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** BulkRowError */
+        BulkRowError: {
+            /** Row */
+            row: number;
+            /** Legal Name */
+            legal_name?: string | null;
+            /** Error */
+            error: string;
+        };
+        /** BulkSupplierJobOut */
+        BulkSupplierJobOut: {
+            /**
+             * Job Id
+             * Format: uuid
+             */
+            job_id: string;
+            /**
+             * Org Id
+             * Format: uuid
+             */
+            org_id: string;
+            /**
+             * Status
+             * @description pending | processing | completed | failed
+             */
+            status: string;
+            /**
+             * Total Rows
+             * @default 0
+             */
+            total_rows: number;
+            /**
+             * Processed Rows
+             * @default 0
+             */
+            processed_rows: number;
+            /**
+             * Successful Rows
+             * @default 0
+             */
+            successful_rows: number;
+            /**
+             * Failed Rows
+             * @default 0
+             */
+            failed_rows: number;
+            /** Errors */
+            errors?: components["schemas"]["BulkRowError"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Completed At */
+            completed_at?: string | null;
+        };
         /** CompanyAliasOut */
         CompanyAliasOut: {
             /**
@@ -401,6 +531,172 @@ export interface components {
              */
             updated_at: string;
         };
+        /** GraphData */
+        GraphData: {
+            /** Nodes */
+            nodes?: components["schemas"]["GraphNode"][];
+            /** Edges */
+            edges?: components["schemas"]["GraphEdge"][];
+            meta: components["schemas"]["GraphMetadata"];
+        };
+        /** GraphEdge */
+        GraphEdge: {
+            /**
+             * Id
+             * @description Unique edge identifier
+             */
+            id: string;
+            /**
+             * Source
+             * @description Source node id
+             */
+            source: string;
+            /**
+             * Target
+             * @description Target node id
+             */
+            target: string;
+            /**
+             * Relationship Type
+             * @description supplies_to | sub_supplies_to | owned_by | located_in
+             */
+            relationship_type: string;
+            /** Tier */
+            tier?: number | null;
+            /** Criticality */
+            criticality?: number | null;
+            /** Annual Spend Usd */
+            annual_spend_usd?: number | null;
+            /**
+             * Confidence
+             * @default 1
+             */
+            confidence: number;
+            /**
+             * Source Type
+             * @description user_declared | gleif | inferred | document
+             * @default user_declared
+             */
+            source_type: string;
+            /**
+             * Single Source
+             * @default false
+             */
+            single_source: boolean;
+            /** Lead Time Days */
+            lead_time_days?: number | null;
+        };
+        /** GraphMetadata */
+        GraphMetadata: {
+            /** Root Id */
+            root_id?: string | null;
+            /**
+             * Depth
+             * @default 3
+             */
+            depth: number;
+            /**
+             * Node Count
+             * @default 0
+             */
+            node_count: number;
+            /**
+             * Edge Count
+             * @default 0
+             */
+            edge_count: number;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
+        };
+        /** GraphNode */
+        GraphNode: {
+            /**
+             * Id
+             * @description Unique node identifier for graph rendering (e.g. comp_<uuid>, org_<uuid>)
+             */
+            id: string;
+            /**
+             * Entity Id
+             * @description Raw database entity UUID
+             */
+            entity_id?: string | null;
+            /**
+             * Label
+             * @description Human-readable node label / legal name
+             */
+            label: string;
+            /**
+             * Type
+             * @description organization | company | location
+             * @default company
+             */
+            type: string;
+            /** Country */
+            country?: string | null;
+            /**
+             * Risk Level
+             * @description CRITICAL | HIGH | MEDIUM | LOW | UNKNOWN
+             * @default UNKNOWN
+             */
+            risk_level: string;
+            /** Risk Score */
+            risk_score?: number | null;
+            /** Annual Spend Usd */
+            annual_spend_usd?: number | null;
+            /** Criticality */
+            criticality?: number | null;
+            /** Tier */
+            tier?: number | null;
+            /** Category */
+            category?: string | null;
+            /**
+             * Single Source
+             * @default false
+             */
+            single_source: boolean;
+            /** Metadata */
+            metadata?: Record<string, never>;
+        };
+        /** GraphPath */
+        GraphPath: {
+            /**
+             * Nodes
+             * @description Ordered sequence of nodes from source to target
+             */
+            nodes: components["schemas"]["GraphNode"][];
+            /**
+             * Edges
+             * @description Ordered sequence of connecting edges
+             */
+            edges: components["schemas"]["GraphEdge"][];
+            /**
+             * Depth
+             * @description Total hops in path
+             */
+            depth: number;
+            /**
+             * Path Confidence
+             * @description Cumulative path confidence (product of edge confidences)
+             */
+            path_confidence: number;
+            /**
+             * Explanation
+             * @description Deterministic natural explanation of the exposure connection
+             */
+            explanation: string;
+        };
+        /** GraphPathsResponse */
+        GraphPathsResponse: {
+            from_node?: components["schemas"]["GraphNode"] | null;
+            to_node?: components["schemas"]["GraphNode"] | null;
+            /** Paths */
+            paths?: components["schemas"]["GraphPath"][];
+            /** Summary */
+            summary: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -559,6 +855,10 @@ export interface components {
             industry?: string | null;
             /** Country */
             country?: string | null;
+            /** Company Id */
+            company_id?: string | null;
+            /** Onboarding Completed */
+            onboarding_completed?: boolean | null;
             /** Settings */
             settings?: Record<string, never> | null;
         };
@@ -780,6 +1080,73 @@ export interface components {
              * @default user_declared
              */
             source: string;
+        };
+        /** SupplierDetailOut */
+        SupplierDetailOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Org Id
+             * Format: uuid
+             */
+            org_id: string;
+            /**
+             * Company Id
+             * Format: uuid
+             */
+            company_id: string;
+            company: components["schemas"]["CompanySummaryOut"];
+            /** Relationship Type */
+            relationship_type: string;
+            /**
+             * Tier
+             * @default 1
+             */
+            tier: number | null;
+            /** Criticality */
+            criticality?: number | null;
+            /** Annual Spend Usd */
+            annual_spend_usd?: number | null;
+            /** Category */
+            category?: string | null;
+            /**
+             * Single Source
+             * @default false
+             */
+            single_source: boolean;
+            /** Lead Time Days */
+            lead_time_days?: number | null;
+            /**
+             * Confidence
+             * @default 1
+             */
+            confidence: number;
+            /**
+             * Source
+             * @default user_declared
+             */
+            source: string;
+            /**
+             * Valid From
+             * Format: date
+             */
+            valid_from: string;
+            /** Valid To */
+            valid_to?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            company_detail?: components["schemas"]["CompanyDetailOut"] | null;
         };
         /** SupplierOut */
         SupplierOut: {
@@ -1282,6 +1649,57 @@ export interface operations {
             };
         };
     };
+    bulk_create_suppliers_v1_suppliers_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkSupplierJobOut"];
+                };
+            };
+        };
+    };
+    get_bulk_supplier_job_v1_suppliers_bulk__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkSupplierJobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_supplier_v1_suppliers__supplier_id__get: {
         parameters: {
             query?: never;
@@ -1299,7 +1717,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SupplierOut"];
+                    "application/json": components["schemas"]["SupplierDetailOut"];
                 };
             };
             /** @description Validation Error */
@@ -1536,6 +1954,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RelationshipOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_graph_v1_graph_get: {
+        parameters: {
+            query?: {
+                /** @description Optional root company ID to center traversal around */
+                root?: string | null;
+                /** @description Traversal depth cap (1-5, default 3) */
+                depth?: number;
+                /** @description Comma-separated relationship types (e.g. supplies_to,sub_supplies_to,owned_by,located_in) */
+                types?: string | null;
+                /** @description Node/edge payload cap (default 300, max 5000) */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphData"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_graph_paths_v1_graph_paths_get: {
+        parameters: {
+            query: {
+                /** @description Source company ID */
+                from: string;
+                /** @description Target company or org ID (defaults to org) */
+                to?: string | null;
+                /** @description Maximum traversal depth (1-5, default 5) */
+                max_depth?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphPathsResponse"];
                 };
             };
             /** @description Validation Error */

@@ -87,6 +87,13 @@ class OrganizationRepository:
             org.industry = payload.industry
         if payload.country is not None:
             org.country = payload.country.upper()
+        if payload.company_id is not None:
+            org.company_id = payload.company_id
+        if payload.onboarding_completed is not None:
+            if payload.onboarding_completed:
+                org.onboarding_completed_at = datetime.now(tz=timezone.utc)
+            else:
+                org.onboarding_completed_at = None
         if payload.settings is not None:
             # Merge rather than replace so callers can patch individual keys
             existing: dict = dict(org.settings or {})

@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Radio,
+  Layers,
 } from "lucide-react";
 import { useUIStore } from "@/lib/store/ui-store";
 import { useUserStore } from "@/lib/store/user-store";
@@ -36,12 +37,20 @@ export function Sidebar() {
   const isCollapsed = useUIStore((s) => s.isSidebarCollapsed);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const isPlatformAdmin = useUserStore((s) => s.isPlatformAdmin);
+  const isOnboarded = useUserStore((s) => s.isOnboarded);
 
   const navItems: NavItem[] = [
     {
       title: "Dashboard",
       href: "/dashboard",
       icon: LayoutDashboard,
+    },
+    {
+      title: "Onboarding",
+      href: "/onboarding",
+      icon: Layers,
+      badge: !isOnboarded ? "Setup" : undefined,
+      badgeVariant: "high",
     },
     {
       title: "Alerts",

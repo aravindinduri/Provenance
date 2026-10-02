@@ -61,6 +61,8 @@ class OrganizationUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=255)
     industry: str | None = Field(None, max_length=100)
     country: str | None = Field(None, min_length=2, max_length=2)
+    company_id: uuid.UUID | None = None
+    onboarding_completed: bool | None = None
     settings: dict | None = None
 
     @field_validator("country")

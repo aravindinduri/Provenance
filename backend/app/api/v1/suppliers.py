@@ -13,7 +13,15 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.base import CurrentUser
@@ -22,9 +30,18 @@ from app.core.errors import bad_request, not_found
 from app.core.pagination import PaginationMeta
 from app.db.session import get_db
 from app.modules.companies.service import CompanyNotFound
+from app.modules.graph.bulk_service import (
+    bulk_job_store,
+    execute_bulk_supplier_job,
+    parse_supplier_csv,
+)
 from app.modules.graph.schemas import (
+    BulkRowError,
+    BulkSupplierJobOut,
+    BulkSupplierUploadRequest,
     PaginatedSuppliers,
     SupplierCreate,
+    SupplierDetailOut,
     SupplierOut,
     SupplierUpdate,
 )
@@ -107,9 +124,124 @@ async def create_supplier(
         return not_found(request, detail=str(exc))  # type: ignore[return-value]
 
 
+
+@router.post(
+    "/bulk",
+    response_model=BulkSupplierJobOut,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Bulk add suppliers via CSV or JSON (async, returns job_id)",
+)
+async def bulk_create_suppliers(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    current_user: CurrentUser = Depends(require_permission("suppliers:write")),
+) -> BulkSupplierJobOut:
+    try:
+        org_id = _get_org_id(current_user)
+    except ValueError as exc:
+        return bad_request(request, detail=str(exc))  # type: ignore[return-value]
+
+    content_type = request.headers.get("content-type", "")
+    csv_text: str = ""
+    rows: list[SupplierCreate] = []
+    parse_errors: list[BulkRowError] = []
+
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        uploaded_file = form.get("file")
+        if not uploaded_file:
+            return bad_request(  # type: ignore[return-value]
+                request, detail="Missing 'file' field in multipart form upload"
+            )
+        raw_bytes = await uploaded_file.read()  # type: ignore[union-attr]
+        try:
+            csv_text = raw_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            csv_text = raw_bytes.decode("latin-1", errors="replace")
+        rows, parse_errors = parse_supplier_csv(csv_text)
+    elif "application/json" in content_type:
+        try:
+            data = await request.json()
+        except Exception:
+            return bad_request(request, detail="Invalid JSON payload")  # type: ignore[return-value]
+        if isinstance(data, dict):
+            if "raw_csv" in data and data["raw_csv"]:
+                rows, parse_errors = parse_supplier_csv(str(data["raw_csv"]))
+            elif "rows" in data and isinstance(data["rows"], list):
+                for idx, r in enumerate(data["rows"], start=1):
+                    try:
+                        rows.append(SupplierCreate.model_validate(r))
+                    except Exception as exc:
+                        parse_errors.append(
+                            BulkRowError(row=idx, error=str(exc))
+                        )
+            else:
+                return bad_request(  # type: ignore[return-value]
+                    request,
+                    detail="JSON must contain 'raw_csv' string or 'rows' array",
+                )
+        elif isinstance(data, list):
+            for idx, r in enumerate(data, start=1):
+                try:
+                    rows.append(SupplierCreate.model_validate(r))
+                except Exception as exc:
+                    parse_errors.append(BulkRowError(row=idx, error=str(exc)))
+        else:
+            return bad_request(  # type: ignore[return-value]
+                request, detail="Expected JSON object or array"
+            )
+    else:
+        # Raw CSV / plain text
+        raw_bytes = await request.body()
+        if not raw_bytes:
+            return bad_request(  # type: ignore[return-value]
+                request, detail="Empty request body. Send CSV or JSON."
+            )
+        try:
+            csv_text = raw_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            csv_text = raw_bytes.decode("latin-1", errors="replace")
+        rows, parse_errors = parse_supplier_csv(csv_text)
+
+    total = len(rows) + len(parse_errors)
+    job = bulk_job_store.create_job(org_id=org_id, total_rows=total)
+
+    # Dispatch async background worker
+    background_tasks.add_task(
+        execute_bulk_supplier_job,
+        job_id=job.job_id,
+        org_id=org_id,
+        rows=rows,
+        parse_errors=parse_errors,
+    )
+
+    return job
+
+
+@router.get(
+    "/bulk/{job_id}",
+    response_model=BulkSupplierJobOut,
+    summary="Get bulk supplier import job status and progress",
+)
+async def get_bulk_supplier_job(
+    request: Request,
+    job_id: uuid.UUID,
+    current_user: CurrentUser = Depends(require_permission("suppliers:read")),
+) -> BulkSupplierJobOut:
+    try:
+        org_id = _get_org_id(current_user)
+    except ValueError as exc:
+        return bad_request(request, detail=str(exc))  # type: ignore[return-value]
+
+    job = bulk_job_store.get_job(job_id, org_id)
+    if not job:
+        return not_found(request, detail=f"Bulk job {job_id} not found")  # type: ignore[return-value]
+    return job
+
+
 @router.get(
     "/{supplier_id}",
-    response_model=SupplierOut,
+    response_model=SupplierDetailOut,
     summary="Get supplier details",
 )
 async def get_supplier(
@@ -117,7 +249,7 @@ async def get_supplier(
     supplier_id: uuid.UUID,
     current_user: CurrentUser = Depends(require_permission("suppliers:read")),
     db: AsyncSession = Depends(get_db),
-) -> SupplierOut:
+) -> SupplierDetailOut:
     try:
         org_id = _get_org_id(current_user)
     except ValueError as exc:
@@ -125,7 +257,7 @@ async def get_supplier(
 
     svc = _service(db)
     try:
-        return await svc.get_supplier(supplier_id, org_id)
+        return await svc.get_supplier_detail(supplier_id, org_id)
     except SupplierNotFound:
         return not_found(request, detail=f"Supplier {supplier_id} not found")  # type: ignore[return-value]
 

@@ -87,6 +87,14 @@ class OrganizationService:
         current_user: CurrentUser,
     ) -> Organization:
         org = await self.get_org_for_user(org_id, current_user)
+        if payload.company_id is not None:
+            from app.modules.companies.repository import CompanyRepository
+            from app.modules.companies.service import CompanyNotFound
+
+            comp_repo = CompanyRepository(self._session)
+            comp = await comp_repo.get_by_id(payload.company_id)
+            if comp is None:
+                raise CompanyNotFound(payload.company_id)
         return await self._repo.update(org, payload, updated_by=current_user.user_id)
 
     async def create_from_webhook(

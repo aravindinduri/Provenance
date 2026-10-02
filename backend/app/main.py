@@ -90,6 +90,7 @@ def create_app() -> FastAPI:
     from app.api.v1.companies import router as companies_router
     from app.api.v1.suppliers import router as suppliers_router
     from app.api.v1.relationships import router as relationships_router
+    from app.api.v1.graph import router as graph_router
 
     api_prefix = "/v1"
     application.include_router(health_router)
@@ -99,8 +100,10 @@ def create_app() -> FastAPI:
     application.include_router(companies_router, prefix=api_prefix)
     application.include_router(suppliers_router, prefix=api_prefix)
     application.include_router(relationships_router, prefix=api_prefix)
+    application.include_router(graph_router, prefix=api_prefix)
 
     return application
+
 
 
 app = create_app()
