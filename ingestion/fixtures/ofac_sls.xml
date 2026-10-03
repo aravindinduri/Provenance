@@ -1,0 +1,63 @@
+<?xml version="1.0" standalone="yes"?>
+<sdnList xmlns="https://sanctionslistservice.ofac.treas.gov">
+  <publshInformation>
+    <Publish_Date>09/25/2026</Publish_Date>
+    <Record_Count>2</Record_Count>
+  </publshInformation>
+  <sdnEntry>
+    <uid>39481</uid>
+    <firstName>Henan</firstName>
+    <lastName>Yixin Specialty Alloys Co., Ltd</lastName>
+    <title>Managing Entity</title>
+    <sdnType>Entity</sdnType>
+    <remarks>Export restriction sanctions target.</remarks>
+    <programList>
+      <program>RUSSIA-EO14024</program>
+      <program>SDGT</program>
+    </programList>
+    <akaList>
+      <aka>
+        <uid>10294</uid>
+        <type>a.k.a.</type>
+        <category>strong</category>
+        <lastName>Yixin Rare Earth Materials</lastName>
+      </aka>
+    </akaList>
+    <addressList>
+      <address>
+        <uid>58291</uid>
+        <address1>No. 88 High-Tech Industrial Zone</address1>
+        <city>Luoyang</city>
+        <stateOrProvince>Henan</stateOrProvince>
+        <country>China</country>
+      </address>
+    </addressList>
+    <idList>
+      <id>
+        <uid>84920</uid>
+        <idType>Tax ID</idType>
+        <idNumber>91410300MA44XXXX7X</idNumber>
+        <idCountry>China</idCountry>
+      </id>
+    </idList>
+  </sdnEntry>
+  <sdnEntry>
+    <uid>39482</uid>
+    <firstName>Viktor</firstName>
+    <lastName>Kuznetsov</lastName>
+    <title>Director of Sourcing</title>
+    <sdnType>Individual</sdnType>
+    <remarks>DOB 14 Mar 1974; POB Moscow, Russia.</remarks>
+    <programList>
+      <program>UKRAINE-EO13661</program>
+    </programList>
+    <addressList>
+      <address>
+        <uid>58292</uid>
+        <address1>Tverskaya St 12</address1>
+        <city>Moscow</city>
+        <country>Russia</country>
+      </address>
+    </addressList>
+  </sdnEntry>
+</sdnList>

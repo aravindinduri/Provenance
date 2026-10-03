@@ -1,0 +1,38 @@
+{
+  "count": 2,
+  "description": "Export administration regulations and trade sanctions notices",
+  "total_pages": 1,
+  "results": [
+    {
+      "title": "Implementation of Additional Export Controls: Advanced Semiconductor Manufacturing Items and Rare Earth Compounds",
+      "type": "Rule",
+      "abstract": "The Bureau of Industry and Security (BIS), Department of Commerce, amends the Export Administration Regulations (EAR) by adding new Export Control Classification Numbers (ECCNs) and expanding licence requirements for critical mineral processing equipment.",
+      "document_number": "2026-19402",
+      "html_url": "https://www.federalregister.gov/documents/2026/09/24/2026-19402/export-controls-semiconductor-materials",
+      "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-09-24/pdf/2026-19402.pdf",
+      "public_inspection_pdf_url": null,
+      "publication_date": "2026-09-24",
+      "agencies": [
+        {
+          "raw_name": "DEPARTMENT OF COMMERCE",
+          "name": "Commerce Department",
+          "id": 57,
+          "url": "https://www.federalregister.gov/agencies/commerce-department",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/57",
+          "slug": "commerce-department"
+        },
+        {
+          "raw_name": "Bureau of Industry and Security",
+          "name": "Bureau of Industry and Security",
+          "id": 63,
+          "url": "https://www.federalregister.gov/agencies/bureau-of-industry-and-security",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/63",
+          "slug": "bureau-of-industry-and-security"
+        }
+      ],
+      "excerpts": "Export Administration Regulations; license requirements for critical materials.",
+      "effective_on": "2026-10-01",
+      "topics": ["Exports", "National security", "Strategic materials"]
+    }
+  ]
+}

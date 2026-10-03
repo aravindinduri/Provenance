@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "pagination": {
+      "currentPage": 1,
+      "perPage": 2,
+      "total": 2
+    }
+  },
+  "data": [
+    {
+      "type": "lei-records",
+      "id": "5493006MHB84DD0ZWV18",
+      "attributes": {
+        "lei": "5493006MHB84DD0ZWV18",
+        "entity": {
+          "legalName": {
+            "name": "Henan Yixin Specialty Alloys Co., Ltd",
+            "language": "zh"
+          },
+          "otherNames": [
+            {
+              "name": "Yixin Alloys Global",
+              "type": "TRADING_OR_BUSINESS_NAME"
+            }
+          ],
+          "legalAddress": {
+            "addressLines": ["No. 88 High-Tech Industrial Zone"],
+            "city": "Luoyang",
+            "region": "CN-41",
+            "country": "CN",
+            "postalCode": "471000"
+          },
+          "headquartersAddress": {
+            "addressLines": ["No. 88 High-Tech Industrial Zone"],
+            "city": "Luoyang",
+            "region": "CN-41",
+            "country": "CN",
+            "postalCode": "471000"
+          },
+          "jurisdiction": "CN",
+          "legalForm": {
+            "id": "9999"
+          },
+          "status": "ACTIVE"
+        },
+        "registration": {
+          "initialRegistrationDate": "2020-03-15T08:00:00Z",
+          "lastUpdateDate": "2026-04-10T12:00:00Z",
+          "status": "ISSUED",
+          "nextRenewalDate": "2027-03-15T08:00:00Z"
+        },
+        "bic": ["YXALCN2LXXX"]
+      },
+      "relationships": {
+        "direct-parent": {
+          "data": {
+            "type": "lei-records",
+            "id": "5493001KJTI48Q8X1111"
+          }
+        },
+        "ultimate-parent": {
+          "data": {
+            "type": "lei-records",
+            "id": "5493001KJTI48Q8X1111"
+          }
+        }
+      }
+    },
+    {
+      "type": "lei-records",
+      "id": "213800B82463F8G27W94",
+      "attributes": {
+        "lei": "213800B82463F8G27W94",
+        "entity": {
+          "legalName": {
+            "name": "Taiwan Advanced Substrates Corp",
+            "language": "en"
+          },
+          "otherNames": [],
+          "legalAddress": {
+            "addressLines": ["No. 12 Science Park Rd"],
+            "city": "Hsinchu",
+            "country": "TW",
+            "postalCode": "300"
+          },
+          "headquartersAddress": {
+            "addressLines": ["No. 12 Science Park Rd"],
+            "city": "Hsinchu",
+            "country": "TW",
+            "postalCode": "300"
+          },
+          "jurisdiction": "TW",
+          "status": "ACTIVE"
+        },
+        "registration": {
+          "initialRegistrationDate": "2018-01-20T09:00:00Z",
+          "lastUpdateDate": "2026-01-15T10:00:00Z",
+          "status": "ISSUED",
+          "nextRenewalDate": "2027-01-20T09:00:00Z"
+        }
+      }
+    }
+  ]
+}

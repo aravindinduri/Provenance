@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>EUR-Lex - Recent EU Acts on Trade and Sanctions</title>
+    <link>https://eur-lex.europa.eu</link>
+    <description>Latest regulations and notices published in the Official Journal</description>
+    <item>
+      <title>Council Regulation (EU) 2026/1842 of 23 September 2026 amending Regulation (EU) No 833/2014 concerning restrictive measures</title>
+      <link>https://eur-lex.europa.eu/legal-content/AUTO/?uri=uriserv:OJ.L_.2026.240.01.0001.01.ENG</link>
+      <description>Council Regulation amending sanctions list Annexes and export bans on high-priority dual-use critical technologies.</description>
+      <dc:date>2026-09-24</dc:date>
+      <guid isPermaLink="false">celex:32026R1842</guid>
+    </item>
+  </channel>
+</rss>

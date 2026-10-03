@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export xmlns="http://eu.europa.ec/fisma/fsd/fsf" generationDate="2026-09-25T10:00:00Z">
+  <sanctionEntity logicalId="98234">
+    <regulation legalBasis="Council Regulation (EU) 2026/1842" publicationDate="2026-09-24" entryIntoForceDate="2026-09-25"/>
+    <subjectType classificationCode="E">Entity</subjectType>
+    <nameAlias wholeName="Titanium Tech Holdings Ltd" nameLanguage="en" strong="true"/>
+    <address street="Smolenskaya Square 3" city="Moscow" countryDescription="Russia" countryIso2Code="RU"/>
+    <sanctionType>Asset freeze and prohibition of funds</sanctionType>
+  </sanctionEntity>
+</export>

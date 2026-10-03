@@ -1,0 +1,22 @@
+{
+  "articles": [
+    {
+      "url": "https://www.reuters.com/markets/commodities/china-restricts-exports-of-rare-earths-antimony-gallium-2026-09-25/?utm_source=rss&utm_medium=feed#article-body",
+      "title": "China tightens export licensing on heavy rare earth elements including dysprosium and gallium",
+      "seendate": "20260925T143000Z",
+      "domain": "reuters.com",
+      "language": "English",
+      "sourcecountry": "China",
+      "socialimage": "https://cloudfront.reuters.com/images/rare_earths_2026.jpg"
+    },
+    {
+      "url": "https://www.bloomberg.com/news/articles/2026-09-26/german-automakers-brace-for-sub-tier-supplier-disruptions-in-semiconductor-metals?fbclid=IwAR29",
+      "title": "European manufacturers face lead time surge as export quotas take immediate effect",
+      "seendate": "20260926T081500Z",
+      "domain": "bloomberg.com",
+      "language": "English",
+      "sourcecountry": "Germany",
+      "socialimage": ""
+    }
+  ]
+}

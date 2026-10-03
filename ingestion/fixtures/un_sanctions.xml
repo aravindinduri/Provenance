@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONSOLIDATED_LIST xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <INDIVIDUALS>
+    <INDIVIDUAL>
+      <DATAID>691024</DATAID>
+      <FIRST_NAME>Alexei</FIRST_NAME>
+      <SECOND_NAME>Ivanov</SECOND_NAME>
+      <UN_LIST_TYPE>DPRK</UN_LIST_TYPE>
+      <REFERENCE_NUMBER>KPi.082</REFERENCE_NUMBER>
+      <LISTED_ON>2026-08-14</LISTED_ON>
+      <COMMENTS_NOTES>Facilitator for sanctioned procurement network.</COMMENTS_NOTES>
+      <NATIONALITY>
+        <VALUE>Russian Federation</VALUE>
+      </NATIONALITY>
+      <INDIVIDUAL_ALIAS>
+        <ALIAS_NAME>Alex Ivanov</ALIAS_NAME>
+        <QUALITY>Good</QUALITY>
+      </INDIVIDUAL_ALIAS>
+    </INDIVIDUAL>
+  </INDIVIDUALS>
+  <ENTITIES>
+    <ENTITY>
+      <DATAID>691025</DATAID>
+      <FIRST_NAME>Oceanic Logistics Transport CJSC</FIRST_NAME>
+      <UN_LIST_TYPE>DPRK</UN_LIST_TYPE>
+      <REFERENCE_NUMBER>KPe.114</REFERENCE_NUMBER>
+      <LISTED_ON>2026-08-14</LISTED_ON>
+      <COMMENTS_NOTES>Maritime shipping company facilitating prohibited commodity transfers.</COMMENTS_NOTES>
+      <ENTITY_ADDRESS>
+        <STREET>Port Vladivostok Pier 4</STREET>
+        <CITY>Vladivostok</CITY>
+        <COUNTRY>Russian Federation</COUNTRY>
+      </ENTITY_ADDRESS>
+    </ENTITY>
+  </ENTITIES>
+</CONSOLIDATED_LIST>
