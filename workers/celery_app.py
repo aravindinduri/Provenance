@@ -28,6 +28,7 @@ def create_celery_app() -> Celery:
             # Queues: ingest (data sources), ai (LLM tasks), notify (channels)
             "task_routes": {
                 "workers.tasks.ingest.*": {"queue": "ingest"},
+                "workers.tasks.enrichment.*": {"queue": "ingest"},
                 "workers.tasks.ai.*": {"queue": "ai"},
                 "workers.tasks.notify.*": {"queue": "notify"},
             },

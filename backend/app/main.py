@@ -5,9 +5,16 @@ Import and call `create_app()` to get the configured ASGI application.
 `app` at module level is what uvicorn/gunicorn targets.
 """
 
+import sys
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncGenerator
+
+# Ensure repo root is on sys.path so ingestion / workers packages are resolvable
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 import structlog
 from fastapi import FastAPI
@@ -92,6 +99,7 @@ def create_app() -> FastAPI:
     from app.api.v1.relationships import router as relationships_router
     from app.api.v1.graph import router as graph_router
     from app.api.v1.admin import router as admin_router
+    from app.api.v1.entity_reviews import router as entity_reviews_router
 
     api_prefix = "/v1"
     application.include_router(health_router)
@@ -99,6 +107,7 @@ def create_app() -> FastAPI:
     application.include_router(orgs_router, prefix=api_prefix)
     application.include_router(webhooks_router, prefix=api_prefix)
     application.include_router(companies_router, prefix=api_prefix)
+    application.include_router(entity_reviews_router, prefix=api_prefix)
     application.include_router(suppliers_router, prefix=api_prefix)
     application.include_router(relationships_router, prefix=api_prefix)
     application.include_router(graph_router, prefix=api_prefix)

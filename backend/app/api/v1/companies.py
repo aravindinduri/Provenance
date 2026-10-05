@@ -21,6 +21,8 @@ from app.db.session import get_db
 from app.modules.companies.schemas import (
     CompanyDetailOut,
     CompanySummaryOut,
+    EntityResolveRequest,
+    EntityResolveResponse,
     PaginatedCompanies,
 )
 from app.modules.companies.service import CompanyNotFound, CompanyService
@@ -78,3 +80,31 @@ async def get_company(
         return await svc.get_company_detail(company_id)
     except CompanyNotFound:
         return not_found(request, detail=f"Company {company_id} not found")  # type: ignore[return-value]
+
+
+@router.post(
+    "/resolve",
+    response_model=EntityResolveResponse,
+    summary="Run Entity Resolution cascade",
+)
+async def resolve_company(
+    payload: EntityResolveRequest,
+    current_user: CurrentUser = Depends(require_permission("suppliers:read")),
+    db: AsyncSession = Depends(get_db),
+) -> EntityResolveResponse:
+    from app.modules.companies.resolution.cascade import EntityResolutionCascade
+
+    cascade = EntityResolutionCascade(db)
+    org_id = uuid.UUID(current_user.org_id) if current_user.org_id else None
+
+    return await cascade.resolve(
+        name=payload.name,
+        country=payload.country,
+        domain=payload.domain,
+        identifiers=payload.identifiers,
+        address=payload.address,
+        context=payload.context,
+        org_id=org_id,
+        auto_review=payload.auto_review,
+    )
+

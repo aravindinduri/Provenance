@@ -37,7 +37,7 @@ class UKOFSIConnector(SourceConnector):
     async def fetch(self, cursor: str | None = None) -> FetchResult:
         """Downloads and parses UK OFSI consolidated CSV."""
         headers = {"User-Agent": "Provenance/1.0 (supply-chain-risk)"}
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
             resp = await client.get(self.download_url, headers=headers)
             resp.raise_for_status()
             content = resp.text
@@ -57,21 +57,21 @@ class UKOFSIConnector(SourceConnector):
         for row in reader:
             # Reconstruct full name from parts
             name_parts = [
-                row.get("Name 6", "").strip(),
-                row.get("Name 1", "").strip(),
-                row.get("Name 2", "").strip(),
-                row.get("Name 3", "").strip(),
-                row.get("Name 4", "").strip(),
-                row.get("Name 5", "").strip(),
+                (row.get("Name 6") or "").strip(),
+                (row.get("Name 1") or "").strip(),
+                (row.get("Name 2") or "").strip(),
+                (row.get("Name 3") or "").strip(),
+                (row.get("Name 4") or "").strip(),
+                (row.get("Name 5") or "").strip(),
             ]
             full_name = " ".join(p for p in name_parts if p).strip()
 
-            group_id = row.get("Group ID", "").strip()
-            group_type = row.get("Group Type", "Entity").strip()
-            regime = row.get("Regime", "").strip()
-            last_updated = row.get("Last Updated", "").strip()
-            country = row.get("Country", "").strip()
-            other_info = row.get("Other Information", "").strip()
+            group_id = (row.get("Group ID") or "").strip()
+            group_type = (row.get("Group Type") or "Entity").strip()
+            regime = (row.get("Regime") or "").strip()
+            last_updated = (row.get("Last Updated") or "").strip()
+            country = (row.get("Country") or "").strip()
+            other_info = (row.get("Other Information") or "").strip()
 
             if full_name or group_id:
                 items.append(

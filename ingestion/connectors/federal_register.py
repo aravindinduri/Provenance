@@ -49,7 +49,7 @@ class FederalRegisterConnector(SourceConnector):
             }
 
         headers = {"Accept": "application/json"}
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
             resp = await client.get(endpoint, params=params, headers=headers)
             resp.raise_for_status()
             payload = resp.json()

@@ -35,7 +35,7 @@ class EURLexConnector(SourceConnector):
         url = cursor or self.feed_url
         headers = {"Accept": "application/rss+xml, application/xml, text/xml, */*"}
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
             resp = await client.get(url, headers=headers)
             resp.raise_for_status()
             content = resp.text

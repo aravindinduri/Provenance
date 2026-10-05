@@ -49,6 +49,7 @@ class Company(AuditMixin, SoftDeleteMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
+        default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
     legal_name: Mapped[str] = mapped_column(Text, nullable=False)
@@ -64,7 +65,7 @@ class Company(AuditMixin, SoftDeleteMixin, Base):
 
     primary_domain: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     industry_codes: Mapped[list[str]] = mapped_column(
-        ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
+        ARRAY(Text), nullable=False, default=list, server_default=text("'{}'::text[]")
     )
 
     registered_address: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
@@ -124,6 +125,7 @@ class CompanyIdentifier(AuditMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
+        default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
     company_id: Mapped[uuid.UUID] = mapped_column(
@@ -162,6 +164,7 @@ class CompanyAlias(AuditMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
+        default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
     company_id: Mapped[uuid.UUID] = mapped_column(
@@ -191,6 +194,7 @@ class EntityResolutionReview(AuditMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
+        default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
     org_id: Mapped[uuid.UUID | None] = mapped_column(

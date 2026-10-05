@@ -13,7 +13,7 @@ org_id is nullable on documents (NULL = global/public regulatory documents).
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     DateTime,
@@ -48,6 +48,7 @@ class Document(AuditMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
+        default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
     org_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -92,6 +93,7 @@ class DocumentChunk(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
+        default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
     document_id: Mapped[uuid.UUID] = mapped_column(
@@ -104,8 +106,8 @@ class DocumentChunk(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     section_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    metadata: Mapped[dict] = mapped_column(
-        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    chunk_metadata: Mapped[dict] = mapped_column(
+        "metadata", JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )
 
     document: Mapped["Document"] = relationship("Document", back_populates="chunks")
@@ -148,6 +150,7 @@ class Embedding(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
+        default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
     chunk_id: Mapped[uuid.UUID] = mapped_column(
@@ -163,7 +166,10 @@ class Embedding(Base):
     # The migration sets the correct type with op.execute() + ALTER COLUMN.
     embedding: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=text("NOW()")
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        server_default=text("NOW()"),
     )
 
     chunk: Mapped["DocumentChunk"] = relationship(
@@ -185,6 +191,7 @@ class AgentRun(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
+        default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
     org_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -215,7 +222,11 @@ class AgentRun(Base):
     langfuse_trace_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=text("NOW()"), index=True
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        server_default=text("NOW()"),
+        index=True,
     )
 
     def __repr__(self) -> str:

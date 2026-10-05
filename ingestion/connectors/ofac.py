@@ -36,7 +36,7 @@ class OFACConnector(SourceConnector):
         Enumerates /sanctions-lists to get current filename per §E.1 #1.
         """
         headers = {"Accept": "application/xml, text/xml, */*"}
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
             # 1. Enumerate available lists
             list_url = f"{self.base_url}/api/sanctions-lists"
             download_url = f"{self.base_url}/api/download/sdn.xml"

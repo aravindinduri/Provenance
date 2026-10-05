@@ -47,7 +47,7 @@ class EUSanctionsConnector(SourceConnector):
             params["token"] = settings.eu_sanctions_token
 
         headers = {"Accept": "application/xml, text/xml, */*"}
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
             resp = await client.get(self.download_url, params=params, headers=headers)
             resp.raise_for_status()
             content = resp.text

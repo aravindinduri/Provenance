@@ -62,6 +62,7 @@ class SupplierRelationship(AuditMixin, SoftDeleteMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
+        default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
 
@@ -168,6 +169,7 @@ class Location(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
+        default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
     country: Mapped[str] = mapped_column(String(2), nullable=False, index=True)
@@ -197,6 +199,7 @@ class CompanyLocation(AuditMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
+        default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
     company_id: Mapped[uuid.UUID] = mapped_column(

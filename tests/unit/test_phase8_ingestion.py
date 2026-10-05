@@ -22,6 +22,21 @@ from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import Session
 
 from app.db.base import Base
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.schema import DefaultClause
+
+@compiles(JSONB, "sqlite")
+def compile_jsonb_sqlite(type_, compiler, **kw):
+    return "TEXT"
+
+@compiles(UUID, "sqlite")
+def compile_uuid_sqlite(type_, compiler, **kw):
+    return "TEXT"
+
+@compiles(DefaultClause, "sqlite")
+def compile_default_sqlite(element, compiler, **kw):
+    return ""
 from app.modules.events.models import (
     DataSource,
     DeadLetterQueue,
@@ -69,17 +84,110 @@ FIXTURES_DIR = Path(__file__).resolve().parent.parent.parent / "ingestion" / "fi
 
 @pytest.fixture
 def sqlite_session():
-    """In-memory SQLite session with tables created."""
+    """In-memory SQLite session with tables created for testing."""
     engine = create_engine(
         "sqlite:///:memory:",
         echo=False,
         connect_args={"check_same_thread": False},
     )
-    # Register JSON compiler for SQLite if needed
-    Base.metadata.create_all(engine)
+    with engine.connect() as conn:
+        conn.execute(
+            text(
+                """
+                CREATE TABLE data_sources (
+                    id TEXT PRIMARY KEY,
+                    source_key TEXT UNIQUE NOT NULL,
+                    name TEXT NOT NULL,
+                    source_type TEXT NOT NULL,
+                    base_url TEXT,
+                    auth_type TEXT,
+                    reliability TEXT DEFAULT 'high',
+                    license_terms TEXT,
+                    terms_verified_at DATE,
+                    coverage_notes TEXT,
+                    poll_interval_seconds INTEGER,
+                    is_enabled BOOLEAN DEFAULT 1,
+                    status TEXT DEFAULT 'healthy',
+                    last_success_at TIMESTAMP,
+                    last_failure_at TIMESTAMP,
+                    consecutive_failures INTEGER DEFAULT 0,
+                    config TEXT DEFAULT '{}',
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP,
+                    created_by TEXT,
+                    updated_by TEXT
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE TABLE source_records (
+                    id TEXT PRIMARY KEY,
+                    source_id TEXT NOT NULL REFERENCES data_sources(id),
+                    external_id TEXT,
+                    content_hash TEXT NOT NULL,
+                    canonical_url TEXT,
+                    title TEXT,
+                    published_date DATE,
+                    retrieved_at TIMESTAMP NOT NULL,
+                    raw_s3_key TEXT NOT NULL,
+                    normalized TEXT NOT NULL,
+                    source_type TEXT,
+                    reliability TEXT,
+                    language TEXT,
+                    processing_status TEXT DEFAULT 'pending',
+                    seen_count INTEGER DEFAULT 1,
+                    last_seen_at TIMESTAMP,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP,
+                    created_by TEXT,
+                    updated_by TEXT,
+                    UNIQUE(source_id, external_id),
+                    UNIQUE(source_id, content_hash)
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE TABLE source_record_versions (
+                    id TEXT PRIMARY KEY,
+                    source_record_id TEXT NOT NULL REFERENCES source_records(id),
+                    version INTEGER NOT NULL,
+                    content_hash TEXT NOT NULL,
+                    normalized TEXT NOT NULL,
+                    raw_s3_key TEXT NOT NULL,
+                    detected_at TIMESTAMP,
+                    UNIQUE(source_record_id, version)
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE TABLE dead_letter_queue (
+                    id TEXT PRIMARY KEY,
+                    task_name TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    error TEXT,
+                    traceback TEXT,
+                    retry_count INTEGER DEFAULT 0,
+                    status TEXT DEFAULT 'failed',
+                    created_at TIMESTAMP,
+                    replayed_at TIMESTAMP,
+                    replayed_by TEXT
+                )
+                """
+            )
+        )
+        conn.commit()
+
     with Session(engine) as session:
         yield session
-    Base.metadata.drop_all(engine)
 
 
 # ── 1. Protocol & Registry Tests ─────────────────────────────────────────────

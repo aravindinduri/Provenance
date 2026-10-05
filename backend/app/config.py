@@ -48,13 +48,16 @@ class Settings(BaseSettings):
     auth_audience: str = ""
 
     # ── LLM ──────────────────────────────────────────────────────────────────
-    llm_provider: str = "anthropic"
+    llm_provider: str = "gemini"  # gemini | anthropic | openai | mock
+    gemini_api_key: str = ""
+    gemini_base_url: str = "https://generativelanguage.googleapis.com"
     anthropic_api_key: str = ""
     openai_api_key: str = ""
-    llm_model_extraction: str = "claude-3-5-sonnet-20241022"
-    llm_model_classification: str = "claude-3-haiku-20240307"
-    llm_model_explanation: str = "claude-3-5-sonnet-20241022"
-    llm_model_investigation: str = "claude-3-5-sonnet-20241022"
+    llm_model_extraction: str = "gemini-1.5-flash"
+    llm_model_classification: str = "gemini-1.5-flash"
+    llm_model_entity_resolution: str = "gemini-1.5-flash"
+    llm_model_explanation: str = "gemini-1.5-flash"
+    llm_model_investigation: str = "gemini-1.5-pro"
     llm_max_retries: int = 2
     llm_timeout_seconds: int = 60
     default_monthly_token_budget: int = 5_000_000

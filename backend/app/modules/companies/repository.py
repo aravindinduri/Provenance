@@ -18,22 +18,8 @@ from sqlalchemy.orm import selectinload
 
 from app.core.pagination import apply_cursor_to_query, encode_cursor
 from app.modules.companies.models import Company
+from app.modules.companies.normalizer import normalize_company_name
 from app.modules.graph.models import CompanyLocation
-
-
-def normalize_company_name(name: str) -> str:
-    """
-    Normalize company name for matching and trigram search:
-    Strip diacritics/accents, lowercase, strip punctuation, and trim whitespace.
-    """
-    decomposed = unicodedata.normalize("NFKD", name)
-    without_accents = "".join(c for c in decomposed if not unicodedata.combining(c))
-    normalized = without_accents.lower()
-    # Strip common punctuation
-    normalized = re.sub(r"[^\w\s]", " ", normalized)
-    # Collapse multiple whitespaces
-    normalized = " ".join(normalized.split())
-    return normalized
 
 
 class CompanyRepository:

@@ -162,18 +162,36 @@ class GraphService:
     async def create_supplier(
         self, org_id: uuid.UUID, payload: SupplierCreate
     ) -> SupplierOut:
-        # Resolve company
+        # Resolve company via ER cascade or ID lookup
         if payload.company_id:
             company = await self.company_repo.get_by_id(payload.company_id)
             if not company:
                 raise CompanyNotFound(payload.company_id)
         else:
             assert payload.legal_name is not None
-            company = await self.company_svc.get_or_create_by_name(
-                legal_name=payload.legal_name,
+            from app.modules.companies.resolution.cascade import EntityResolutionCascade
+
+            cascade = EntityResolutionCascade(self.db)
+            er_res = await cascade.resolve(
+                name=payload.legal_name,
                 country=payload.country,
-                primary_domain=payload.primary_domain,
+                domain=payload.primary_domain,
+                org_id=org_id,
+                auto_review=True,
             )
+            if er_res.matched and er_res.company_id:
+                resolved_comp = await self.company_repo.get_by_id(er_res.company_id)
+                company = resolved_comp if resolved_comp else await self.company_svc.get_or_create_by_name(
+                    legal_name=payload.legal_name,
+                    country=payload.country,
+                    primary_domain=payload.primary_domain,
+                )
+            else:
+                company = await self.company_svc.get_or_create_by_name(
+                    legal_name=payload.legal_name,
+                    country=payload.country,
+                    primary_domain=payload.primary_domain,
+                )
 
         rel = await self.repo.create_supplier(
             org_id=org_id,

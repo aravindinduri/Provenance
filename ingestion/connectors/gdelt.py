@@ -76,7 +76,7 @@ class GDELTConnector(NewsConnector):
             "Accept": "application/json",
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
             resp = await client.get(self.endpoint, params=params, headers=headers)
             if resp.status_code == 429:
                 await self.rate_limiter.record_429("gdelt_doc", cooldown_seconds=30.0)

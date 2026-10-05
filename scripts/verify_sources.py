@@ -34,8 +34,16 @@ SOURCES_TO_VERIFY = [
 ]
 
 
+def safe_print(msg: str) -> None:
+    try:
+        print(msg)
+    except UnicodeEncodeError:
+        encoding = getattr(sys.stdout, "encoding", "ascii") or "ascii"
+        print(msg.encode(encoding, errors="replace").decode(encoding))
+
+
 async def verify_source(source_key: str) -> dict[str, any]:
-    print(f"\n[+] Verifying connector: {source_key} ...")
+    safe_print(f"\n[+] Verifying connector: {source_key} ...")
     start_time = time.time()
     connector = get_connector(source_key)
 
@@ -52,18 +60,18 @@ async def verify_source(source_key: str) -> dict[str, any]:
     }
 
     try:
-        # Attempt live fetch
-        fetch_res = await connector.fetch()
+        # Attempt live fetch with a 12s timeout per source
+        fetch_res = await asyncio.wait_for(connector.fetch(), timeout=12.0)
         result["live_fetch_success"] = True
         result["items_count"] = len(fetch_res.items)
         if fetch_res.items:
             norm = connector.normalize(fetch_res.items[0])
             result["normalized_sample"] = norm.title
-            print(f"    ✓ Live fetch succeeded: {len(fetch_res.items)} items.")
-            print(f"    ✓ Sample title: {norm.title}")
+            safe_print(f"    [OK] Live fetch succeeded: {len(fetch_res.items)} items.")
+            safe_print(f"    [OK] Sample title: {norm.title}")
     except Exception as exc:
         result["error"] = str(exc)
-        print(f"    ⚠ Live fetch failed/timed out ({exc}). Testing recorded fixture...")
+        safe_print(f"    [WARN] Live fetch note ({exc}). Testing recorded fixture...")
         # Fallback to fixture verification to ensure parsing/normalization is sound
         fixture_paths = {
             "ofac_sls": ROOT / "ingestion" / "fixtures" / "ofac_sls.xml",
@@ -102,30 +110,30 @@ async def verify_source(source_key: str) -> dict[str, any]:
             if items:
                 norm = connector.normalize(items[0])
                 result["normalized_sample"] = norm.title
-                print(f"    ✓ Fixture verification passed: {len(items)} items normalized.")
+                safe_print(f"    [OK] Fixture verification passed: {len(items)} items normalized.")
 
     result["duration_seconds"] = round(time.time() - start_time, 2)
     return result
 
 
 async def main():
-    print("=" * 70)
-    print(" PROVENANCE DATA SOURCES VERIFICATION (PHASE 8)")
-    print("=" * 70)
+    safe_print("=" * 70)
+    safe_print(" PROVENANCE DATA SOURCES VERIFICATION (PHASE 8)")
+    safe_print("=" * 70)
 
     results = []
     for s_key in SOURCES_TO_VERIFY:
         res = await verify_source(s_key)
         results.append(res)
 
-    print("\n" + "=" * 70)
-    print(" SUMMARY")
-    print("=" * 70)
+    safe_print("\n" + "=" * 70)
+    safe_print(" SUMMARY")
+    safe_print("=" * 70)
     for r in results:
         status_str = "LIVE PASS" if r["live_fetch_success"] else ("FIXTURE PASS" if r["fixture_fallback_success"] else "FAIL")
-        print(f" - {r['source_key']:<20} [{status_str:<12}] {r['items_count']} items in {r['duration_seconds']}s")
+        safe_print(f" - {r['source_key']:<20} [{status_str:<12}] {r['items_count']} items in {r['duration_seconds']}s")
 
-    print("\nVerification complete.")
+    safe_print("\nVerification complete.")
 
 
 if __name__ == "__main__":

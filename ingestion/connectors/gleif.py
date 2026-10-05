@@ -42,7 +42,7 @@ class GLEIFConnector(SourceConnector):
             "User-Agent": "Provenance/1.0 (supply-chain-risk)",
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
             resp = await client.get(endpoint, params=params, headers=headers)
             if resp.status_code == 429:
                 from ingestion.connectors.rate_limiter import get_token_bucket_limiter

@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   Loader2,
   Globe,
+  Sparkles,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -452,6 +453,11 @@ export default function SuppliersPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs border-primary/30 hover:bg-primary/10">
+            <Link href="/suppliers/reviews">
+              <Sparkles className="h-3.5 w-3.5 text-primary" /> Review Queue
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
             <Link href="/onboarding">
               <Layers className="h-3.5 w-3.5 text-primary" /> Onboarding Wizard

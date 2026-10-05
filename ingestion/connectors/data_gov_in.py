@@ -51,7 +51,7 @@ class DataGovInConnector(SourceConnector):
             params["api-key"] = api_key
 
         headers = {"Accept": "application/json"}
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
             resp = await client.get(endpoint, params=params, headers=headers)
             # Check rate limit headers
             rate_remaining = resp.headers.get("X-RateLimit-Remaining")

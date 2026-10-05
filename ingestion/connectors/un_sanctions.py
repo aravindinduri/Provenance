@@ -33,7 +33,7 @@ class UNSanctionsConnector(SourceConnector):
     async def fetch(self, cursor: str | None = None) -> FetchResult:
         """Downloads UN SC XML list."""
         headers = {"Accept": "application/xml, text/xml, */*"}
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
             resp = await client.get(self.xml_url, headers=headers)
             resp.raise_for_status()
             content = resp.text
