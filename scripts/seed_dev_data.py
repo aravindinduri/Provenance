@@ -88,6 +88,7 @@ def _upsert_company(
     data_source: str = "user",
     enrichment_status: str = "pending",
     is_verified: bool = False,
+    confidence: float = 1.0,
     lei: str | None = None,
     industry_codes: list[str] | None = None,
 ) -> uuid.UUID:
@@ -108,11 +109,11 @@ def _upsert_company(
                 """
                 INSERT INTO companies
                     (id, legal_name, name_norm, country, data_source,
-                     enrichment_status, is_verified,
+                     enrichment_status, is_verified, confidence,
                      industry_codes, created_at, updated_at)
                 VALUES
                     (:id, :legal_name, :name_norm, :country, :data_source,
-                     :enrichment_status, :is_verified,
+                     :enrichment_status, :is_verified, :confidence,
                      :industry_codes, NOW(), NOW())
                 """
             ),
@@ -124,6 +125,7 @@ def _upsert_company(
                 "data_source": data_source,
                 "enrichment_status": enrichment_status,
                 "is_verified": is_verified,
+                "confidence": confidence,
                 "industry_codes": industry_codes or [],
             },
         )

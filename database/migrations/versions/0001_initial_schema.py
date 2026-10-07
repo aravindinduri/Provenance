@@ -89,8 +89,6 @@ _RLS_TABLES = [
     "spend_leakage_findings",
     "notification_preferences",
     "notifications",
-    "category_index_mappings",
-    "supplier_price_claims",
 ]
 
 
