@@ -1,33 +1,27 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Sparkles } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+"use client";
 
-export default function InvestigatePage() {
+import React from "react";
+import { InvestigationWorkspace } from "@/components/investigate/investigation-workspace";
+
+export default function InvestigatePage(): React.JSX.Element {
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">AI Investigation Agent</h1>
-          <p className="text-sm text-muted-foreground">Autonomous evidence gathering, price-claim verification, and root-cause discovery.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            AI Investigation Agent
+            <span className="text-xs px-2.5 py-0.5 rounded-full font-mono font-normal bg-primary/10 text-primary border border-primary/20">
+              Agent 4 Active
+            </span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Autonomous multi-tier evidence gathering, price-claim verification, and geopolitical exposure tracing.
+          </p>
         </div>
       </div>
-      <Card className="glass-panel p-8 text-center border-dashed">
-        <CardHeader className="flex flex-col items-center gap-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Sparkles className="h-6 w-6" />
-          </div>
-          <CardTitle className="text-lg">Agentic Workspace (Phase 9)</CardTitle>
-          <CardDescription className="max-w-md mx-auto text-xs">
-            Natural language queries, LangGraph execution traces, and verified evidence chain generation occur in Phase 9.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard">Return to Dashboard</Link>
-          </Button>
-        </CardContent>
-      </Card>
+
+      {/* Main Agentic Workspace */}
+      <InvestigationWorkspace />
     </div>
   );
 }
