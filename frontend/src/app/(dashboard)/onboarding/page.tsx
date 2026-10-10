@@ -429,7 +429,7 @@ export default function OnboardingPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="e.g. Acme Manufacturing Corp, Siemens, Tata Motors..."
+                  placeholder="e.g. Siemens, Tata Motors, Acme Corp..."
                   className="pl-9 bg-card/80 text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}

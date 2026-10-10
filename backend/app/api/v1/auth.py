@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.base import CurrentUser
 from app.auth.security import create_access_token, hash_password, verify_password
+from app.config import get_settings
 from app.core.deps import get_current_user
 from app.core.errors import bad_request
 from app.db.session import get_db
@@ -32,7 +33,7 @@ class RegisterRequest(BaseModel):
     email: str = Field(min_length=5, max_length=255, description="Valid email address")
     password: str = Field(min_length=6, description="Password must be at least 6 characters")
     full_name: str = Field(min_length=2, max_length=255)
-    org_name: str = Field(default="Feuji Inc.", max_length=255)
+    org_name: str = Field(min_length=2, max_length=255, description="Organization or company name")
 
 
 class LoginRequest(BaseModel):
@@ -97,10 +98,10 @@ async def register_user(
     db.add(user)
 
     # 3. Resolve or Create Organization
-    org_name = payload.org_name.strip() or "Feuji Inc."
+    org_name = payload.org_name.strip()
     slug = re.sub(r"[^a-z0-9]+", "-", org_name.lower()).strip("-") or "org"
 
-    # Check if an organization with this slug or name already exists
+    # Check if an organization with this slug already exists
     org_query = await db.execute(
         text("SELECT id FROM organizations WHERE slug = :slug AND deleted_at IS NULL"),
         {"slug": slug},
@@ -109,7 +110,6 @@ async def register_user(
 
     if existing_org:
         org_id = existing_org[0]
-        # Retrieve full org record
         org_repo = OrganizationRepository(db)
         org = await org_repo.get_by_id(org_id)
     else:
@@ -120,12 +120,9 @@ async def register_user(
             clerk_org_id=clerk_org_id,
             name=org_name,
             slug=slug,
-            country="US" if "feuji" in slug else "US",
-            settings={
-                "website": "https://www.feuji.com" if "feuji" in slug else None,
-                "primary_domain": "feuji.com" if "feuji" in slug else None,
-            },
-            monthly_token_budget=5_000_000,
+            country="US",
+            settings={},
+            monthly_token_budget=get_settings().default_monthly_token_budget,
         )
         db.add(org)
 
@@ -231,31 +228,33 @@ async def login_user(
     )
     member_record = member_query.fetchone()
 
-    if member_record:
-        org_id, role, persona = member_record[0], member_record[1], member_record[2]
-        org_repo = OrganizationRepository(db)
-        org = await org_repo.get_by_id(org_id)
-    else:
-        # Fallback to primary tenant in the workspace (e.g. Feuji Inc.)
-        org_repo = OrganizationRepository(db)
-        org_list = await org_repo.list_organizations(limit=1)
-        org = org_list[0] if org_list else None
-        org_id = org.id if org else uuid.uuid4()
-        role = "org_admin"
-        persona = "risk_manager"
+    if not member_record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User account is not associated with any organization.",
+        )
+
+    org_id, role, persona = member_record[0], member_record[1], member_record[2]
+    org_repo = OrganizationRepository(db)
+    org = await org_repo.get_by_id(org_id)
+    if not org:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Associated organization could not be found.",
+        )
 
     # 4. Generate JWT
     token_claims = {
         "sub": str(user_id),
         "email": normalized_email,
-        "org_id": str(org_id),
-        "clerk_org_id": org.clerk_org_id if org else "org_dev_feuji_001",
+        "org_id": str(org.id),
+        "clerk_org_id": org.clerk_org_id,
         "role": role,
         "persona": persona or "risk_manager",
     }
     access_token = create_access_token(token_claims)
 
-    org_out = OrganizationOut.model_validate(org) if org else None
+    org_out = OrganizationOut.model_validate(org)
     return AuthResponse(
         access_token=access_token,
         token_type="bearer",

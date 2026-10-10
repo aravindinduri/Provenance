@@ -26,7 +26,7 @@ export default function SignUpPage(): React.JSX.Element {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [orgName, setOrgName] = useState("Feuji Inc.");
+  const [orgName, setOrgName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -36,8 +36,8 @@ export default function SignUpPage(): React.JSX.Element {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !email.trim() || !password) {
-      setErrorMsg("Please fill in all required fields.");
+    if (!fullName.trim() || !email.trim() || !password || !orgName.trim()) {
+      setErrorMsg("Please fill in all required fields including organization name.");
       return;
     }
 
@@ -57,7 +57,7 @@ export default function SignUpPage(): React.JSX.Element {
           full_name: fullName.trim(),
           email: email.trim(),
           password,
-          org_name: orgName.trim() || "Feuji Inc.",
+          org_name: orgName.trim(),
         }),
       });
 
@@ -126,7 +126,7 @@ export default function SignUpPage(): React.JSX.Element {
             </label>
             <Input
               type="email"
-              placeholder="name@feuji.com"
+              placeholder="name@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -159,7 +159,7 @@ export default function SignUpPage(): React.JSX.Element {
             </label>
             <Input
               type="text"
-              placeholder="Feuji Inc."
+              placeholder="e.g. Acme Corp, Feuji, Global Tech"
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
               required

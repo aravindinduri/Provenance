@@ -43,8 +43,7 @@ engine = create_engine(_sync_url(), echo=False)
 
 
 def purge_and_bootstrap_clean_workspace() -> None:
-    primary_org_id = uuid.UUID("c3d0ecce-c25c-48f9-80e2-110ec2f10bd1")
-    clerk_org_id = "org_dev_feuji_001"
+    settings = get_settings()
 
     print("=" * 70)
     print("PROVENANCE ZERO-DUMMY-DATA BOOTSTRAP")
@@ -57,6 +56,22 @@ def purge_and_bootstrap_clean_workspace() -> None:
 
         # 1. Unlink company from organizations to avoid foreign key conflicts
         session.execute(text("UPDATE organizations SET company_id = NULL WHERE company_id IS NOT NULL;"))
+
+        # Dynamically resolve existing primary tenant or create new ID
+        existing_org_row = session.execute(
+            text("SELECT id, clerk_org_id FROM organizations WHERE slug = 'feuji-inc' OR name ILIKE '%feuji%' LIMIT 1")
+        ).fetchone()
+        if not existing_org_row:
+            existing_org_row = session.execute(
+                text("SELECT id, clerk_org_id FROM organizations ORDER BY created_at ASC LIMIT 1")
+            ).fetchone()
+
+        if existing_org_row:
+            primary_org_id = existing_org_row[0]
+            clerk_org_id = existing_org_row[1] or f"org_{primary_org_id.hex[:12]}"
+        else:
+            primary_org_id = uuid.uuid4()
+            clerk_org_id = f"org_{primary_org_id.hex[:12]}"
 
         # 2. Purge all dummy/synthetic entities and relationships
         print("\n[-] Purging synthetic / mock supplier graphs and company records...")

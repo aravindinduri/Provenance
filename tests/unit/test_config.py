@@ -21,3 +21,12 @@ def test_get_settings_is_cached() -> None:
     a = get_settings()
     b = get_settings()
     assert a is b
+
+
+def test_secret_keys_and_env_loaded() -> None:
+    s = get_settings()
+    assert s.secret_key != ""
+    assert s.jwt_secret != ""
+    assert s.encryption_key != ""
+    assert s.database_url != ""
+    assert isinstance(s.allowed_origins_list, list)

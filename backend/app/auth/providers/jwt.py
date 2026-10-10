@@ -51,10 +51,7 @@ class JwtVerifier:
         # ── 2. Extract Claims ─────────────────────────────────────────────────
         user_id = payload.get("sub")
         email = payload.get("email", "")
-        org_id = payload.get("org_id")
-        clerk_org_id = payload.get("clerk_org_id", "org_dev_feuji_001")
-        role = payload.get("role", ROLE_ORG_ADMIN)
-        persona = payload.get("persona", "risk_manager")
+        token_org_id = payload.get("org_id")
         assigned_categories = payload.get("assigned_categories", [])
 
         if not user_id:
@@ -71,43 +68,42 @@ class JwtVerifier:
         )
         user_record = user_row.fetchone()
 
-        if user_record:
-            if not user_record[2]:
-                raise AuthenticationError("User account has been deactivated.")
-            user_id = str(user_record[0])
-            email = str(user_record[1])
+        if not user_record:
+            raise AuthenticationError("User does not exist or has been removed.")
 
-        # ── 4. Verify Active Organization Context ────────────────────────────
-        resolved_org_id = org_id
-        if resolved_org_id:
-            org_row = await db_session.execute(
-                text(
-                    "SELECT id, clerk_org_id FROM organizations "
-                    "WHERE id = :oid AND deleted_at IS NULL LIMIT 1"
-                ),
-                {"oid": uuid.UUID(str(resolved_org_id))},
-            )
-            org_rec = org_row.fetchone()
-            if org_rec:
-                resolved_org_id = str(org_rec[0])
-                clerk_org_id = str(org_rec[1])
-            else:
-                resolved_org_id = None
+        if not user_record[2]:
+            raise AuthenticationError("User account has been deactivated.")
 
-        if not resolved_org_id:
-            # Fallback to the user's primary registered organization
-            primary_row = await db_session.execute(
-                text(
-                    "SELECT id, clerk_org_id FROM organizations "
-                    "WHERE deleted_at IS NULL ORDER BY created_at ASC LIMIT 1"
-                )
-            )
-            primary_rec = primary_row.fetchone()
-            if primary_rec:
-                resolved_org_id = str(primary_rec[0])
-                clerk_org_id = str(primary_rec[1])
-            else:
-                raise AuthorizationError("No active organization found for this account.")
+        user_id = str(user_record[0])
+        email = str(user_record[1])
+
+        # ── 4. Resolve Organization Membership from Database ─────────────────
+        conditions = [
+            "(om.user_id = :uid OR om.user_id = :email)",
+            "om.deleted_at IS NULL",
+            "o.deleted_at IS NULL",
+        ]
+        params: dict[str, Any] = {"uid": str(user_id), "email": email}
+        if token_org_id:
+            conditions.append("om.org_id = :req_org")
+            params["req_org"] = uuid.UUID(str(token_org_id))
+
+        query_sql = (
+            "SELECT om.org_id, om.role, om.persona, o.clerk_org_id "
+            "FROM organization_members om "
+            "JOIN organizations o ON o.id = om.org_id "
+            f"WHERE {' AND '.join(conditions)} "
+            "ORDER BY om.created_at ASC LIMIT 1"
+        )
+        member_row = await db_session.execute(text(query_sql), params)
+        member = member_row.fetchone()
+        if not member:
+            raise AuthorizationError("User is not an active member of any organization.")
+
+        resolved_org_id = str(member[0])
+        role = member[1] or payload.get("role", ROLE_ORG_USER)
+        persona = member[2] or payload.get("persona", "risk_manager")
+        clerk_org_id = member[3]
 
         return CurrentUser(
             user_id=str(user_id),

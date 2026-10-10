@@ -307,10 +307,12 @@ class ClaudeProvider(BaseAIProvider):
     def __init__(
         self,
         api_key: str | None = None,
+        base_url: str | None = None,
         default_model: str = "claude-3-5-sonnet-20241022",
     ) -> None:
         settings = get_settings()
         self.api_key = api_key or settings.anthropic_api_key
+        self.base_url = (base_url or settings.anthropic_base_url).rstrip("/") if (base_url or settings.anthropic_base_url) else "https://api.anthropic.com/v1"
         self.default_model = default_model
 
     async def generate_text(
@@ -337,7 +339,7 @@ class ClaudeProvider(BaseAIProvider):
             body["system"] = system_prompt
 
         async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post("https://api.anthropic.com/v1/messages", headers=headers, json=body)
+            resp = await client.post(f"{self.base_url}/messages", headers=headers, json=body)
             if resp.status_code != 200:
                 raise AIProviderError(f"Claude API error {resp.status_code}: {resp.text}", status_code=resp.status_code)
             data = resp.json()
@@ -386,10 +388,12 @@ class OpenAIProvider(BaseAIProvider):
     def __init__(
         self,
         api_key: str | None = None,
+        base_url: str | None = None,
         default_model: str = "gpt-4o-mini",
     ) -> None:
         settings = get_settings()
         self.api_key = api_key or settings.openai_api_key
+        self.base_url = (base_url or settings.openai_base_url).rstrip("/") if (base_url or settings.openai_base_url) else "https://api.openai.com/v1"
         self.default_model = default_model
 
     async def generate_text(
@@ -418,7 +422,7 @@ class OpenAIProvider(BaseAIProvider):
         }
 
         async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post("https://api.openai.com/v1/chat/completions", headers=headers, json=body)
+            resp = await client.post(f"{self.base_url}/chat/completions", headers=headers, json=body)
             if resp.status_code != 200:
                 raise AIProviderError(f"OpenAI API error {resp.status_code}: {resp.text}", status_code=resp.status_code)
             data = resp.json()

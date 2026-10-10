@@ -23,8 +23,8 @@ export default function SignInPage(): React.JSX.Element {
   const hasClerk = isClerkConfigured();
   const { setAuthSession } = useAppAuth();
 
-  const [email, setEmail] = useState("aravind@feuji.com");
-  const [password, setPassword] = useState("SecurePassword123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -78,7 +78,7 @@ export default function SignInPage(): React.JSX.Element {
           Sign In to Provenance
         </CardTitle>
         <CardDescription className="text-xs">
-          Supply Chain Risk Intelligence &bull; Feuji Inc.
+          Multi-Tier Supply Chain Risk Intelligence Platform
         </CardDescription>
       </CardHeader>
 
@@ -98,7 +98,7 @@ export default function SignInPage(): React.JSX.Element {
             </label>
             <Input
               type="email"
-              placeholder="name@feuji.com"
+              placeholder="name@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

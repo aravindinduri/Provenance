@@ -16,23 +16,30 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/suppliers",
 }));
 
+const TEST_ORG_ID = process.env.TEST_ORG_ID || "c3d0ecce-c25c-48f9-80e2-110ec2f10bd1";
+const TEST_ORG_NAME = process.env.TEST_ORG_NAME || "Feuji Inc.";
+const TEST_ORG_SLUG = process.env.TEST_ORG_SLUG || "feuji-inc";
+const TEST_CLERK_ORG_ID = process.env.TEST_CLERK_ORG_ID || "org_dev_feuji_001";
+const TEST_USER_ID = process.env.TEST_USER_ID || "0f803a08-3091-4e52-bda5-8a54bd57ea2e";
+const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || "aravind@feuji.com";
+
 describe("Phase 6 — Organization & Supplier Management", () => {
   beforeEach(() => {
     useUserStore.getState().setFromMe({
-      user_id: "test_user_admin",
-      email: "admin@test.com",
-      org_id: "00000000-0000-0000-0000-000000000001",
-      clerk_org_id: "clerk_org_1",
+      user_id: TEST_USER_ID,
+      email: TEST_USER_EMAIL,
+      org_id: TEST_ORG_ID,
+      clerk_org_id: TEST_CLERK_ORG_ID,
       role: "org_admin",
       persona: "risk_manager",
       assigned_categories: ["Semiconductors", "Direct Materials"],
       organization: {
-        id: "00000000-0000-0000-0000-000000000001",
-        clerk_org_id: "clerk_org_1",
-        name: "Acme Industrial Corp",
-        slug: "acme-industrial",
+        id: TEST_ORG_ID,
+        clerk_org_id: TEST_CLERK_ORG_ID,
+        name: TEST_ORG_NAME,
+        slug: TEST_ORG_SLUG,
         company_id: null,
-        industry: "Manufacturing",
+        industry: "Technology Services",
         country: "US",
         subscription_tier: "enterprise",
         monthly_token_budget: 5000000,
@@ -114,7 +121,7 @@ describe("Phase 6 — Organization & Supplier Management", () => {
       expect(screen.getByText("3. Spend Matrix")).toBeInTheDocument();
       expect(screen.getByText("4. Backfill Scan")).toBeInTheDocument();
       expect(screen.getByText("Search Legal Entity Name or LEI Identifier")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText(/acme manufacturing/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/siemens/i)).toBeInTheDocument();
     });
   });
 

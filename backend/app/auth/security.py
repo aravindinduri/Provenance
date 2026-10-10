@@ -58,6 +58,9 @@ def create_access_token(
 ) -> str:
     """Issue a signed JWT access token for an authenticated user."""
     settings = get_settings()
+    if not settings.jwt_secret:
+        raise ValueError("JWT_SECRET environment variable is not configured. Please set JWT_SECRET in .env.")
+
     to_encode = data.copy()
 
     now = datetime.now(timezone.utc)
@@ -69,7 +72,7 @@ def create_access_token(
     to_encode.update({
         "exp": expire,
         "iat": now,
-        "iss": "provenance-api",
+        "iss": settings.auth_issuer or settings.otel_service_name or "provenance-api",
     })
 
     return jwt.encode(
@@ -82,6 +85,9 @@ def create_access_token(
 def decode_access_token(token: str) -> dict[str, Any]:
     """Decode and verify signature and expiration of a JWT access token."""
     settings = get_settings()
+    if not settings.jwt_secret:
+        raise ValueError("JWT_SECRET environment variable is not configured. Please set JWT_SECRET in .env.")
+
     return jwt.decode(
         token,
         settings.jwt_secret,

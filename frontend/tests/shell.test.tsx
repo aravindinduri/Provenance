@@ -30,7 +30,7 @@ describe("App Shell & Navigation", () => {
       email: "risk.manager@provenance.internal",
       role: "org_admin",
       isPlatformAdmin: false,
-      orgName: "Acme Industrial Group",
+      orgName: process.env.TEST_ORG_NAME || "Provenance Organization",
     });
   });
 

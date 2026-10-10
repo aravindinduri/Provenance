@@ -14,23 +14,30 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/graph",
 }));
 
+const TEST_ORG_ID = process.env.TEST_ORG_ID || "c3d0ecce-c25c-48f9-80e2-110ec2f10bd1";
+const TEST_ORG_NAME = process.env.TEST_ORG_NAME || "Feuji Inc.";
+const TEST_ORG_SLUG = process.env.TEST_ORG_SLUG || "feuji-inc";
+const TEST_CLERK_ORG_ID = process.env.TEST_CLERK_ORG_ID || "org_dev_feuji_001";
+const TEST_USER_ID = process.env.TEST_USER_ID || "0f803a08-3091-4e52-bda5-8a54bd57ea2e";
+const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || "aravind@feuji.com";
+
 describe("Phase 7 — Supply Chain Graph Visualizer", () => {
   beforeEach(() => {
     useUserStore.getState().setFromMe({
-      user_id: "test_user_risk_mgr",
-      email: "risk@apex.com",
-      org_id: "00000000-0000-0000-0000-000000000001",
-      clerk_org_id: "clerk_org_1",
+      user_id: TEST_USER_ID,
+      email: TEST_USER_EMAIL,
+      org_id: TEST_ORG_ID,
+      clerk_org_id: TEST_CLERK_ORG_ID,
       role: "analyst",
       persona: "risk_manager",
-      assigned_categories: ["Semiconductors", "Alloys"],
+      assigned_categories: ["Semiconductors", "Cloud & Infra"],
       organization: {
-        id: "00000000-0000-0000-0000-000000000001",
-        clerk_org_id: "clerk_org_1",
-        name: "Apex Turbine Systems",
-        slug: "apex-turbines",
+        id: TEST_ORG_ID,
+        clerk_org_id: TEST_CLERK_ORG_ID,
+        name: TEST_ORG_NAME,
+        slug: TEST_ORG_SLUG,
         company_id: null,
-        industry: "Aerospace",
+        industry: "Technology Services",
         country: "US",
         subscription_tier: "enterprise",
         monthly_token_budget: 5000000,
@@ -54,7 +61,7 @@ describe("Phase 7 — Supply Chain Graph Visualizer", () => {
             },
             to_node: {
               id: "org_current",
-              label: "Apex Turbine Systems",
+              label: TEST_ORG_NAME,
               type: "organization",
               country: "US",
             },
@@ -63,7 +70,7 @@ describe("Phase 7 — Supply Chain Graph Visualizer", () => {
                 depth: 1,
                 path_confidence: 1.0,
                 explanation:
-                  "Path from Taiwan Semiconductor Mfg Co reaches Apex Turbine Systems across 1 tier(s) with 100.0% cumulative confidence. Supply Chain Route: Taiwan Semiconductor Mfg Co -> Apex Turbine Systems. Exposure impacts Apex Turbine Systems with $8,500,000 direct annual spend (Criticality: 5/5) via supplies_to.",
+                  `Path reaches ${TEST_ORG_NAME} across 1 tier(s) with 100.0% cumulative confidence.`,
                 nodes: [
                   {
                     id: "comp_tsmc",
@@ -73,7 +80,7 @@ describe("Phase 7 — Supply Chain Graph Visualizer", () => {
                   },
                   {
                     id: "org_current",
-                    label: "Apex Turbine Systems",
+                    label: TEST_ORG_NAME,
                     type: "organization",
                     country: "US",
                   },
@@ -93,7 +100,7 @@ describe("Phase 7 — Supply Chain Graph Visualizer", () => {
               },
             ],
             summary:
-              "Discovered 1 verified supply chain path(s) connecting Taiwan Semiconductor Mfg Co to Apex Turbine Systems across up to 1 tiers. Highest path confidence: 100.0%.",
+              `Discovered 1 verified supply chain path(s) connecting to ${TEST_ORG_NAME}.`,
           }),
         });
       }
@@ -105,7 +112,7 @@ describe("Phase 7 — Supply Chain Graph Visualizer", () => {
             nodes: [
               {
                 id: "org_current",
-                label: "Apex Turbine Systems",
+                label: TEST_ORG_NAME,
                 type: "organization",
                 country: "US",
                 risk_level: "LOW",
