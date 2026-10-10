@@ -127,16 +127,28 @@ export default function SuppliersPage() {
     category: "",
   });
 
+  // Auth Headers Helper
+  const getAuthHeaders = useCallback(async (includeJson: boolean = false) => {
+    const token = await getToken();
+    const headers: Record<string, string> = {};
+    if (includeJson) {
+      headers["Content-Type"] = "application/json";
+    }
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    if (orgId) {
+      headers["x-org-id"] = orgId;
+    }
+    return headers;
+  }, [getToken, orgId]);
+
   // Fetch Suppliers from Live API
   const loadSuppliers = useCallback(async () => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      const token = await getToken();
-      const headers: Record<string, string> = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-      if (orgId) headers["x-org-id"] = orgId;
-
+      const headers = await getAuthHeaders();
       const res = await fetch("/api/v1/suppliers?limit=100", { headers });
       if (res.ok) {
         const data = await res.json();
@@ -152,7 +164,7 @@ export default function SuppliersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [orgId, getToken]);
+  }, [getAuthHeaders]);
 
   useEffect(() => {
     loadSuppliers();
@@ -171,7 +183,8 @@ export default function SuppliersPage() {
     });
 
     try {
-      const res = await fetch(`/api/v1/suppliers/${sup.id}`);
+      const headers = await getAuthHeaders();
+      const res = await fetch(`/api/v1/suppliers/${sup.id}`, { headers });
       if (res.ok) {
         const detailed = await res.json();
         setSelectedSupplierForDossier(detailed);
@@ -187,9 +200,10 @@ export default function SuppliersPage() {
     setIsCreating(true);
     setErrorMsg(null);
     try {
+      const headers = await getAuthHeaders(true);
       const res = await fetch("/api/v1/suppliers", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(orgId ? { "x-org-id": orgId } : {}) },
+        headers,
         body: JSON.stringify(newSupplier),
       });
 
@@ -223,9 +237,10 @@ export default function SuppliersPage() {
     if (!selectedSupplierForDossier) return;
     setIsEditing(true);
     try {
+      const headers = await getAuthHeaders(true);
       const res = await fetch(`/api/v1/suppliers/${selectedSupplierForDossier.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", ...(orgId ? { "x-org-id": orgId } : {}) },
+        headers,
         body: JSON.stringify(editFormData),
       });
 
@@ -247,8 +262,10 @@ export default function SuppliersPage() {
       return;
     }
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch(`/api/v1/suppliers/${supplierId}`, {
         method: "DELETE",
+        headers,
       });
       if (res.ok || res.status === 204) {
         setSelectedSupplierForDossier(null);
@@ -267,8 +284,10 @@ export default function SuppliersPage() {
       const formData = new FormData();
       formData.append("file", csvFile);
 
+      const headers = await getAuthHeaders(false);
       const res = await fetch("/api/v1/suppliers/bulk", {
         method: "POST",
+        headers,
         body: formData,
       });
 
@@ -283,7 +302,8 @@ export default function SuppliersPage() {
       // Poll
       const interval = setInterval(async () => {
         try {
-          const pollRes = await fetch(`/api/v1/suppliers/bulk/${job.job_id}`);
+          const pollHeaders = await getAuthHeaders();
+          const pollRes = await fetch(`/api/v1/suppliers/bulk/${job.job_id}`, { headers: pollHeaders });
           if (pollRes.ok) {
             const data = await pollRes.json();
             setBulkJobStatus(data);

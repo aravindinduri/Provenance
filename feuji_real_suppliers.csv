@@ -1,0 +1,19 @@
+legal_name,country,primary_domain,tier,criticality,annual_spend_usd,category,single_source,lead_time_days
+Microsoft Corporation,US,microsoft.com,1,5,1450000,Cloud & AI Platforms,false,1
+Amazon Web Services Inc.,US,aws.amazon.com,1,5,1800000,Cloud Infrastructure & Compute,false,1
+Salesforce Inc.,US,salesforce.com,1,4,650000,Enterprise CRM & SaaS,false,5
+Appian Corporation,US,appian.com,1,3,420000,Workflow & Low-Code Automation,true,7
+Snowflake Inc.,US,snowflake.com,1,4,580000,Data Cloud & Warehousing,false,3
+Cisco Systems Inc.,US,cisco.com,1,3,350000,Cybersecurity & Enterprise Networking,false,14
+Oracle Corporation,US,oracle.com,1,4,720000,Database Systems & ERP Cloud,false,7
+CoreStack Inc.,US,corestack.io,2,3,180000,Cloud Governance & FinOps,true,10
+Dell Technologies Inc.,US,dell.com,1,3,490000,Hardware Infrastructure & Servers,false,21
+Hewlett Packard Enterprise Company,US,hpe.com,1,4,850000,Hybrid Cloud & Edge Systems,false,15
+Tata Consultancy Services Limited,IN,tcs.com,1,4,1200000,IT Consulting & Systems Integration,false,14
+Infosys Limited,IN,infosys.com,1,4,950000,Digital Services & Enterprise Software,false,14
+Wipro Limited,IN,wipro.com,1,3,620000,Technology Services & Modernization,false,14
+HCL Technologies Limited,IN,hcltech.com,1,3,530000,Engineering & R&D Services,false,20
+Bharti Airtel Limited,IN,airtel.in,1,4,410000,Data Centers & Telecom Infrastructure,true,30
+Redington Limited,IN,redingtongroup.com,1,3,670000,IT Supply Chain & Technology Distribution,false,15
+LTIMindtree Limited,IN,ltimindtree.com,2,3,380000,Digital Transformation & Analytics,false,14
+Tata Communications Limited,IN,tatacommunications.com,2,4,290000,Network Security & Cloud Peering,true,25

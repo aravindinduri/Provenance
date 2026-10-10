@@ -27,6 +27,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useAppAuth } from "@/lib/auth/clerk-adapter";
+import { useUserStore } from "@/lib/store/user-store";
 
 export interface CandidateItem {
   company_id: string;
@@ -64,6 +65,7 @@ export interface ReviewItem {
 
 export function EntityReviewQueue(): React.JSX.Element {
   const { getToken } = useAppAuth();
+  const orgId = useUserStore((s) => s.orgId);
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("pending");
@@ -84,6 +86,7 @@ export function EntityReviewQueue(): React.JSX.Element {
       const token = await getToken();
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (orgId) headers["x-org-id"] = orgId;
 
       const url = statusFilter === "all"
         ? "/api/v1/entity-reviews"
@@ -101,7 +104,7 @@ export function EntityReviewQueue(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter, getToken]);
+  }, [statusFilter, getToken, orgId]);
 
   useEffect(() => {
     fetchReviews();
@@ -117,6 +120,7 @@ export function EntityReviewQueue(): React.JSX.Element {
       const token = await getToken();
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (orgId) headers["x-org-id"] = orgId;
 
       const res = await fetch(`/api/v1/entity-reviews/${reviewId}/resolve`, {
         method: "POST",
@@ -141,9 +145,14 @@ export function EntityReviewQueue(): React.JSX.Element {
     setIsResolvingTest(true);
     setTestResult(null);
     try {
+      const token = await getToken();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (orgId) headers["x-org-id"] = orgId;
+
       const res = await fetch("/api/v1/companies/resolve", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           name: testName.trim(),
           country: testCountry.trim() || undefined,

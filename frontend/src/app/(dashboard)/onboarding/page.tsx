@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useUserStore } from "@/lib/store/user-store";
+import { useAppAuth } from "@/lib/auth/clerk-adapter";
 import { cn } from "@/lib/utils";
 
 interface CompanyResult {
@@ -50,8 +51,25 @@ interface StagedSupplier {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { getToken } = useAppAuth();
   const orgId = useUserStore((s) => s.orgId);
   const orgName = useUserStore((s) => s.orgName);
+
+  // Auth Headers Helper
+  const getAuthHeaders = React.useCallback(async (includeJson: boolean = false) => {
+    const token = await getToken();
+    const headers: Record<string, string> = {};
+    if (includeJson) {
+      headers["Content-Type"] = "application/json";
+    }
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    if (orgId) {
+      headers["x-org-id"] = orgId;
+    }
+    return headers;
+  }, [getToken, orgId]);
 
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -106,7 +124,8 @@ export default function OnboardingPage() {
     const timer = setTimeout(async () => {
       setIsSearchingCompanies(true);
       try {
-        const res = await fetch(`/api/v1/companies/search?q=${encodeURIComponent(searchQuery)}&limit=8`);
+        const headers = await getAuthHeaders();
+        const res = await fetch(`/api/v1/companies/search?q=${encodeURIComponent(searchQuery)}&limit=8`, { headers });
         if (res.ok) {
           const data = await res.json();
           setSearchResults(data.data || []);
@@ -119,7 +138,7 @@ export default function OnboardingPage() {
       }
     }, 250);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, getAuthHeaders]);
 
   // Step 1: Save Claimed Company
   const handleClaimCompany = async () => {
@@ -130,7 +149,8 @@ export default function OnboardingPage() {
 
       if (!targetCompanyId && customCompanyName.trim()) {
         // Create company or resolve
-        const compRes = await fetch("/api/v1/companies/search?q=" + encodeURIComponent(customCompanyName.trim()));
+        const searchHeaders = await getAuthHeaders();
+        const compRes = await fetch("/api/v1/companies/search?q=" + encodeURIComponent(customCompanyName.trim()), { headers: searchHeaders });
         if (compRes.ok) {
           const data = await compRes.json();
           if (data.data?.length > 0) {
@@ -140,9 +160,10 @@ export default function OnboardingPage() {
       }
 
       if (orgId) {
+        const patchHeaders = await getAuthHeaders(true);
         const patchRes = await fetch(`/api/v1/organizations/${orgId}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: patchHeaders,
           body: JSON.stringify({
             name: selectedCompany?.legal_name || customCompanyName || orgName || "My Organization",
             company_id: targetCompanyId || undefined,
@@ -224,8 +245,10 @@ export default function OnboardingPage() {
       const formData = new FormData();
       formData.append("file", csvFile);
 
+      const headers = await getAuthHeaders();
       const res = await fetch("/api/v1/suppliers/bulk", {
         method: "POST",
+        headers,
         body: formData,
       });
 
@@ -248,7 +271,10 @@ export default function OnboardingPage() {
       // Poll job progress
       const pollInterval = setInterval(async () => {
         try {
-          const pollRes = await fetch(`/api/v1/suppliers/bulk/${job.job_id}`);
+          const pollHeaders = await getAuthHeaders();
+          const pollRes = await fetch(`/api/v1/suppliers/bulk/${job.job_id}`, {
+            headers: pollHeaders,
+          });
           if (pollRes.ok) {
             const updated = await pollRes.json();
             setBulkJobStatus({
@@ -299,9 +325,10 @@ export default function OnboardingPage() {
         single_source: s.single_source,
       }));
 
+      const headers = await getAuthHeaders(true);
       const res = await fetch("/api/v1/suppliers/bulk", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ rows: payloadRows }),
       });
 
@@ -331,7 +358,7 @@ export default function OnboardingPage() {
     ];
 
     let stepIdx = 0;
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       if (stepIdx < stages.length) {
         setScanProgress(stages[stepIdx].progress);
         setScanStage(stages[stepIdx].text);
@@ -340,17 +367,23 @@ export default function OnboardingPage() {
         clearInterval(interval);
         // Mark onboarding complete in backend
         if (orgId) {
-          fetch(`/api/v1/organizations/${orgId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ onboarding_completed: true }),
-          }).catch(() => {});
+          try {
+            const headers = await getAuthHeaders(true);
+            await fetch(`/api/v1/organizations/${orgId}`, {
+              method: "PATCH",
+              headers,
+              body: JSON.stringify({ onboarding_completed: true }),
+            });
+          } catch {
+            // ignore
+          }
         }
       }
-    }, 700);
+    }, 1200);
 
     return () => clearInterval(interval);
-  }, [currentStep, orgId]);
+  }, [currentStep, orgId, getAuthHeaders]);
+
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 py-6">

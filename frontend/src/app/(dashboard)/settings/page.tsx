@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useUserStore } from "@/lib/store/user-store";
+import { useAppAuth } from "@/lib/auth/clerk-adapter";
 import { cn } from "@/lib/utils";
 
 interface OrgMember {
@@ -34,6 +35,7 @@ interface OrgMember {
 }
 
 export default function SettingsPage() {
+  const { getToken } = useAppAuth();
   const orgId = useUserStore((s) => s.orgId);
   const orgName = useUserStore((s) => s.orgName);
   const companyId = useUserStore((s) => s.companyId);
@@ -62,12 +64,29 @@ export default function SettingsPage() {
   const [alertThreshold, setAlertThreshold] = useState(4);
   const [digestFrequency, setDigestFrequency] = useState("daily");
 
+  // Auth Headers Helper
+  const getAuthHeaders = useCallback(async (includeJson: boolean = false) => {
+    const token = await getToken();
+    const headers: Record<string, string> = {};
+    if (includeJson) {
+      headers["Content-Type"] = "application/json";
+    }
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    if (orgId) {
+      headers["x-org-id"] = orgId;
+    }
+    return headers;
+  }, [getToken, orgId]);
+
   // Load Members
   const loadMembers = useCallback(async () => {
     if (!orgId) return;
     setIsLoadingMembers(true);
     try {
-      const res = await fetch(`/api/v1/organizations/${orgId}/members`);
+      const headers = await getAuthHeaders();
+      const res = await fetch(`/api/v1/organizations/${orgId}/members`, { headers });
       if (res.ok) {
         const data = await res.json();
         setMembers(data.data || []);
@@ -79,7 +98,7 @@ export default function SettingsPage() {
     } finally {
       setIsLoadingMembers(false);
     }
-  }, [orgId]);
+  }, [orgId, getAuthHeaders]);
 
   useEffect(() => {
     loadMembers();
@@ -94,9 +113,10 @@ export default function SettingsPage() {
     setIsSavingProfile(true);
     setProfileSuccessMsg(null);
     try {
+      const headers = await getAuthHeaders(true);
       const res = await fetch(`/api/v1/organizations/${orgId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(profileForm),
       });
 
@@ -116,9 +136,10 @@ export default function SettingsPage() {
     if (!orgId || !newMemberUserId.trim()) return;
     setIsInviting(true);
     try {
+      const headers = await getAuthHeaders(true);
       const res = await fetch(`/api/v1/organizations/${orgId}/members`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           user_id: newMemberUserId.trim(),
           role: newMemberRole,
@@ -142,8 +163,10 @@ export default function SettingsPage() {
   const handleRemoveMember = async (userId: string) => {
     if (!orgId || !confirm(`Remove user ${userId} from organization?`)) return;
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch(`/api/v1/organizations/${orgId}/members/${userId}`, {
         method: "DELETE",
+        headers,
       });
       if (res.ok || res.status === 204) {
         await loadMembers();

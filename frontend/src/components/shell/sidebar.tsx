@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useUIStore } from "@/lib/store/ui-store";
 import { useUserStore } from "@/lib/store/user-store";
+import { useAppAuth } from "@/lib/auth/clerk-adapter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,32 @@ export function Sidebar() {
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const isPlatformAdmin = useUserStore((s) => s.isPlatformAdmin);
   const isOnboarded = useUserStore((s) => s.isOnboarded);
+  const orgId = useUserStore((s) => s.orgId);
+  const { getToken } = useAppAuth();
+  const [activeAlertsCount, setActiveAlertsCount] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    async function fetchCounts() {
+      if (!orgId) return;
+      try {
+        const token = await getToken();
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        if (orgId) headers["x-org-id"] = orgId;
+        const res = await fetch("/api/v1/alerts/counts", { headers });
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          // Count active/new alerts
+          const unhandled = (data.new ?? 0) + (data.acknowledged ?? 0);
+          setActiveAlertsCount(unhandled > 0 ? unhandled : null);
+        }
+      } catch {
+        // silent fallback
+      }
+    }
+    fetchCounts();
+  }, [orgId, getToken, pathname]);
 
   const navItems: NavItem[] = [
     {
@@ -56,7 +83,7 @@ export function Sidebar() {
       title: "Alerts",
       href: "/alerts",
       icon: AlertTriangle,
-      badge: 4,
+      badge: activeAlertsCount && activeAlertsCount > 0 ? activeAlertsCount : undefined,
       badgeVariant: "critical",
     },
     {

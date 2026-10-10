@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import OnboardingPage from "@/app/(dashboard)/onboarding/page";
 import SuppliersPage from "@/app/(dashboard)/suppliers/page";
 import SettingsPage from "@/app/(dashboard)/settings/page";
+import AlertsPage from "@/app/(dashboard)/alerts/page";
 import { useUserStore } from "@/lib/store/user-store";
 
 // Mock next/navigation
@@ -104,6 +105,66 @@ describe("Phase 6 — Organization & Supplier Management", () => {
         });
       }
 
+      if (url.includes("/api/v1/alerts/counts")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            total: 2,
+            new: 1,
+            acknowledged: 0,
+            investigating: 1,
+            escalated: 0,
+            resolved: 0,
+            dismissed: 0,
+            critical: 1,
+            high: 1,
+            medium: 0,
+            low: 0,
+          }),
+        });
+      }
+
+      if (url.includes("/api/v1/alerts")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: "alert-1",
+                org_id: TEST_ORG_ID,
+                risk_assessment_id: "ra-1",
+                event_id: "ev-1",
+                company_id: "comp-1",
+                headline: "Export Control Notice: Apex Silicon Foundries",
+                explanation: "BIS regulatory notice flagged potential cross-border component review.",
+                why_it_matters: "Direct operational impact on primary fab supply.",
+                recommendations: ["Audit safety stock buffers", "Verify secondary sourcing"],
+                severity_band: "CRITICAL",
+                impact_score: 88,
+                confidence: 0.95,
+                status: "new",
+                company_name: "Apex Silicon Foundries",
+                company_country: "US",
+                category: "Semiconductors",
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                evidence: [
+                  {
+                    id: "ev-rec-1",
+                    evidence_type: "source_record",
+                    source_name: "Federal Register Bulletin",
+                    source_url: "https://www.federalregister.gov/bulletin-123",
+                    excerpt: "Export licensing requirement for semiconductor foundries updated.",
+                  },
+                ],
+                actions: [],
+              },
+            ],
+            total: 1,
+          }),
+        });
+      }
+
       return Promise.resolve({
         ok: true,
         json: async () => ({ data: [] }),
@@ -171,6 +232,52 @@ describe("Phase 6 — Organization & Supplier Management", () => {
       expect(screen.getByRole("tab", { name: /team & members/i })).toBeInTheDocument();
       expect(screen.getByRole("tab", { name: /risk preferences/i })).toBeInTheDocument();
       expect(screen.getByText("Tenant Identity")).toBeInTheDocument();
+    });
+  });
+
+  describe("Alert Center (/alerts)", () => {
+    it("renders Alert Center header, dynamic KPI metrics, and filter tabs", async () => {
+      render(<AlertsPage />);
+      expect(screen.getByText("Alerts & Signal Stream")).toBeInTheDocument();
+      expect(screen.getByText("Total Signals")).toBeInTheDocument();
+      expect(screen.getByText("Critical Exposures")).toBeInTheDocument();
+      expect(screen.getByText("In Investigation")).toBeInTheDocument();
+      expect(screen.getAllByText("Resolved")[0]).toBeInTheDocument();
+
+      // Action buttons
+      expect(screen.getByRole("button", { name: /run risk scan/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /refresh/i })).toBeInTheDocument();
+
+      // Filter tabs
+      expect(screen.getByText("All Alerts")).toBeInTheDocument();
+      expect(screen.getByText("New Signals")).toBeInTheDocument();
+
+      // Verify loaded alert card
+      await waitFor(() => {
+        expect(
+          screen.getByText("Export Control Notice: Apex Silicon Foundries")
+        ).toBeInTheDocument();
+      });
+      expect(screen.getAllByText("CRITICAL").length).toBeGreaterThan(0);
+      expect(screen.getByText("New Signal")).toBeInTheDocument();
+    });
+
+    it("opens Alert Dossier dialog when clicking View Dossier & Evidence", async () => {
+      render(<AlertsPage />);
+      await waitFor(() => {
+        expect(
+          screen.getByText("Export Control Notice: Apex Silicon Foundries")
+        ).toBeInTheDocument();
+      });
+
+      const dossierBtn = screen.getByRole("button", { name: /view dossier & evidence/i });
+      fireEvent.click(dossierBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Root Cause & Regulatory Exposure/i)).toBeInTheDocument();
+        expect(screen.getByText(/Supporting Evidence Chain/i)).toBeInTheDocument();
+        expect(screen.getByText(/Federal Register Bulletin/i)).toBeInTheDocument();
+      });
     });
   });
 });
