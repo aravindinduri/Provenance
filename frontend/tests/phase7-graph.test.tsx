@@ -248,7 +248,8 @@ describe("Phase 7 — Supply Chain Graph Visualizer", () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/v1/graph?depth=3")
+        expect.stringContaining("/api/v1/graph?depth=3"),
+        expect.anything()
       );
     });
   });

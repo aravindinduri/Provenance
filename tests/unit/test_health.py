@@ -23,11 +23,18 @@ async def test_liveness() -> None:
 
 
 @pytest.mark.asyncio
-async def test_readiness_degraded_without_db() -> None:
+async def test_readiness_degraded_without_db(monkeypatch) -> None:
     """
-    In unit-test context there is no real DB or Redis.
+    In unit-test context when DB is unavailable,
     /health/ready must return 503 (not 500 — the endpoint handles the error).
     """
+    from app.db import session as db_session
+
+    async def _mock_unreachable():
+        raise ConnectionRefusedError("Simulated DB connection failure")
+
+    monkeypatch.setattr(db_session, "check_db_connection", _mock_unreachable)
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/health/ready")
 

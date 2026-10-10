@@ -72,30 +72,10 @@ export default function SettingsPage() {
         const data = await res.json();
         setMembers(data.data || []);
       } else {
-        // Fallback for demo
-        setMembers([
-          {
-            id: "mem-1",
-            user_id: "user_admin_001",
-            role: "org_admin",
-            persona: "risk_manager",
-            assigned_categories: ["Semiconductors", "Direct Materials"],
-            joined_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: "mem-2",
-            user_id: "user_analyst_002",
-            role: "analyst",
-            persona: "category_manager",
-            assigned_categories: ["Fabrication"],
-            joined_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-          },
-        ]);
+        setMembers([]);
       }
     } catch {
-      // Fallback
+      setMembers([]);
     } finally {
       setIsLoadingMembers(false);
     }

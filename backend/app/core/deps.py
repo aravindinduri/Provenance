@@ -35,7 +35,7 @@ from app.auth.base import (
     AuthorizationError,
     CurrentUser,
 )
-from app.auth.providers.clerk import ClerkVerifier
+from app.auth.providers.jwt import JwtVerifier
 from app.db.session import get_db
 
 logger = structlog.get_logger(__name__)
@@ -46,9 +46,9 @@ _bearer = HTTPBearer(auto_error=False)
 
 
 @lru_cache(maxsize=1)
-def _get_verifier() -> ClerkVerifier:
-    """Singleton ClerkVerifier — constructed once."""
-    return ClerkVerifier()
+def _get_verifier() -> JwtVerifier:
+    """Singleton JwtVerifier — constructed once, enforces cryptographically signed JWTs."""
+    return JwtVerifier()
 
 
 # ── Primary auth dependency ───────────────────────────────────────────────────

@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useUserStore } from "@/lib/store/user-store";
+import { useAppAuth } from "@/lib/auth/clerk-adapter";
 
 interface SupplierItem {
   id: string;
@@ -72,6 +73,7 @@ interface SupplierItem {
 
 export default function SuppliersPage() {
   const orgId = useUserStore((s) => s.orgId);
+  const { getToken } = useAppAuth();
   const [suppliers, setSuppliers] = useState<SupplierItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -125,112 +127,32 @@ export default function SuppliersPage() {
     category: "",
   });
 
-  // Fetch Suppliers
+  // Fetch Suppliers from Live API
   const loadSuppliers = useCallback(async () => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      const res = await fetch("/api/v1/suppliers?limit=100");
+      const token = await getToken();
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (orgId) headers["x-org-id"] = orgId;
+
+      const res = await fetch("/api/v1/suppliers?limit=100", { headers });
       if (res.ok) {
         const data = await res.json();
         setSuppliers(data.data || []);
       } else {
-        // Fallback demo mock if backend DB is not reachable in local sandbox
-        setSuppliers([
-          {
-            id: "sup-001",
-            org_id: orgId || "org-1",
-            company_id: "comp-001",
-            relationship_type: "supplies_to",
-            tier: 1,
-            criticality: 5,
-            annual_spend_usd: 8500000,
-            category: "Semiconductors",
-            single_source: true,
-            lead_time_days: 90,
-            confidence: 1.0,
-            source: "user_declared",
-            company: {
-              id: "comp-001",
-              legal_name: "Taiwan Semiconductor Mfg Co",
-              name_norm: "taiwan semiconductor mfg co",
-              country: "TW",
-              primary_domain: "tsmc.com",
-              is_verified: true,
-            },
-          },
-          {
-            id: "sup-002",
-            org_id: orgId || "org-1",
-            company_id: "comp-002",
-            relationship_type: "supplies_to",
-            tier: 1,
-            criticality: 4,
-            annual_spend_usd: 3200000,
-            category: "Fabrication",
-            single_source: false,
-            lead_time_days: 25,
-            confidence: 1.0,
-            source: "user_declared",
-            company: {
-              id: "comp-002",
-              legal_name: "Apex Precision Tooling Inc",
-              name_norm: "apex precision tooling inc",
-              country: "US",
-              primary_domain: "apexprecision.com",
-            },
-          },
-          {
-            id: "sup-003",
-            org_id: orgId || "org-1",
-            company_id: "comp-003",
-            relationship_type: "supplies_to",
-            tier: 2,
-            criticality: 4,
-            annual_spend_usd: 1450000,
-            category: "Chemicals & Rare Earths",
-            single_source: true,
-            lead_time_days: 45,
-            confidence: 0.95,
-            source: "gleif",
-            company: {
-              id: "comp-003",
-              legal_name: "Shenghe Rare Earth Materials",
-              name_norm: "shenghe rare earth materials",
-              country: "CN",
-              primary_domain: "shenghe-re.cn",
-            },
-          },
-          {
-            id: "sup-004",
-            org_id: orgId || "org-1",
-            company_id: "comp-004",
-            relationship_type: "supplies_to",
-            tier: 1,
-            criticality: 2,
-            annual_spend_usd: 480000,
-            category: "Standard Fasteners",
-            single_source: false,
-            lead_time_days: 7,
-            confidence: 1.0,
-            source: "user_declared",
-            company: {
-              id: "comp-004",
-              legal_name: "Bavarian Fastener Works GmbH",
-              name_norm: "bavarian fastener works gmbh",
-              country: "DE",
-              primary_domain: "bavarianfasteners.de",
-            },
-          },
-        ]);
+        const err = await res.json().catch(() => ({}));
+        setErrorMsg(err.detail || `Failed to load suppliers (HTTP ${res.status})`);
+        setSuppliers([]);
       }
-    } catch {
-      // Mock fallback
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to load suppliers");
       setSuppliers([]);
     } finally {
       setIsLoading(false);
     }
-  }, [orgId]);
+  }, [orgId, getToken]);
 
   useEffect(() => {
     loadSuppliers();
@@ -267,7 +189,7 @@ export default function SuppliersPage() {
     try {
       const res = await fetch("/api/v1/suppliers", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(orgId ? { "x-org-id": orgId } : {}) },
         body: JSON.stringify(newSupplier),
       });
 
@@ -303,7 +225,7 @@ export default function SuppliersPage() {
     try {
       const res = await fetch(`/api/v1/suppliers/${selectedSupplierForDossier.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(orgId ? { "x-org-id": orgId } : {}) },
         body: JSON.stringify(editFormData),
       });
 

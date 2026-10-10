@@ -1,42 +1,102 @@
 "use client";
 
-import React, { createContext, useContext, useMemo } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { ClerkProvider as BaseClerkProvider, useAuth as useClerkAuth, useClerk as useClerkClient } from "@clerk/nextjs";
 
 import { isClerkConfigured } from "./clerk-config";
 export { isClerkConfigured };
 
-interface DevAuthContextType {
+interface AuthContextType {
   isSignedIn: boolean;
   userId: string | null;
+  userEmail: string | null;
   getToken: () => Promise<string | null>;
+  setAuthSession: (token: string, user: { id: string; email: string }) => void;
   signOut: (options?: { redirectUrl?: string }) => Promise<void>;
 }
 
-const DevAuthContext = createContext<DevAuthContextType>({
-  isSignedIn: true,
-  userId: "usr_dev_risk_lead",
-  getToken: async () => "dev_test_token_provenance",
+const AuthContext = createContext<AuthContextType>({
+  isSignedIn: false,
+  userId: null,
+  userEmail: null,
+  getToken: async () => null,
+  setAuthSession: () => {},
   signOut: async () => {},
 });
 
-function DevAuthProvider({ children }: { children: React.ReactNode }) {
+const TOKEN_KEY = "provenance_token";
+const USER_ID_KEY = "provenance_user_id";
+const USER_EMAIL_KEY = "provenance_user_email";
+
+function NativeAuthProvider({ children }: { children: React.ReactNode }) {
+  const [token, setToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize from localStorage on browser mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedToken = localStorage.getItem(TOKEN_KEY);
+      const storedUserId = localStorage.getItem(USER_ID_KEY);
+      const storedEmail = localStorage.getItem(USER_EMAIL_KEY);
+      if (storedToken) {
+        setToken(storedToken);
+        setUserId(storedUserId);
+        setUserEmail(storedEmail);
+      }
+      setIsInitialized(true);
+    }
+  }, []);
+
+  const setAuthSession = useCallback((newToken: string, user: { id: string; email: string }) => {
+    setToken(newToken);
+    setUserId(user.id);
+    setUserEmail(user.email);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(TOKEN_KEY, newToken);
+      localStorage.setItem(USER_ID_KEY, user.id);
+      localStorage.setItem(USER_EMAIL_KEY, user.email);
+      document.cookie = `${TOKEN_KEY}=${newToken}; path=/; max-age=86400; SameSite=Lax`;
+    }
+  }, []);
+
+  const signOut = useCallback(async (opts?: { redirectUrl?: string }) => {
+    setToken(null);
+    setUserId(null);
+    setUserEmail(null);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_ID_KEY);
+      localStorage.removeItem(USER_EMAIL_KEY);
+      document.cookie = `${TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;
+      window.location.href = opts?.redirectUrl || "/sign-in";
+    }
+  }, []);
+
+  const getToken = useCallback(async () => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(TOKEN_KEY) || token;
+    }
+    return token;
+  }, [token]);
+
   const value = useMemo(
     () => ({
-      isSignedIn: true,
-      userId: "usr_dev_risk_lead",
-      getToken: async () => "dev_test_token_provenance",
-      signOut: async (opts?: { redirectUrl?: string }) => {
-        window.location.href = opts?.redirectUrl || "/sign-in";
-      },
+      isSignedIn: !!token,
+      userId,
+      userEmail,
+      getToken,
+      setAuthSession,
+      signOut,
     }),
-    []
+    [token, userId, userEmail, getToken, setAuthSession, signOut]
   );
 
   return (
-    <DevAuthContext.Provider value={value}>
+    <AuthContext.Provider value={value}>
       {children}
-    </DevAuthContext.Provider>
+    </AuthContext.Provider>
   );
 }
 
@@ -44,7 +104,7 @@ export function ClerkProviderWrapper({ children }: { children: React.ReactNode }
   const hasClerk = isClerkConfigured();
 
   if (!hasClerk) {
-    return <DevAuthProvider>{children}</DevAuthProvider>;
+    return <NativeAuthProvider>{children}</NativeAuthProvider>;
   }
 
   return (
@@ -61,16 +121,22 @@ export function ClerkProviderWrapper({ children }: { children: React.ReactNode }
 export function useAppAuth(): {
   isSignedIn: boolean;
   userId: string | null;
+  userEmail: string | null;
   getToken: () => Promise<string | null>;
+  setAuthSession: (token: string, user: { id: string; email: string }) => void;
+  signOut: (options?: { redirectUrl?: string }) => Promise<void>;
 } {
   const hasClerk = isClerkConfigured();
-  const devAuth = useContext(DevAuthContext);
+  const nativeAuth = useContext(AuthContext);
 
   if (!hasClerk) {
     return {
-      isSignedIn: devAuth.isSignedIn,
-      userId: devAuth.userId,
-      getToken: devAuth.getToken,
+      isSignedIn: nativeAuth.isSignedIn,
+      userId: nativeAuth.userId,
+      userEmail: nativeAuth.userEmail,
+      getToken: nativeAuth.getToken,
+      setAuthSession: nativeAuth.setAuthSession,
+      signOut: nativeAuth.signOut,
     };
   }
 
@@ -79,7 +145,10 @@ export function useAppAuth(): {
   return {
     isSignedIn: !!clerkAuth.isSignedIn,
     userId: clerkAuth.userId ?? null,
+    userEmail: null,
     getToken: clerkAuth.getToken,
+    setAuthSession: () => {},
+    signOut: async () => {},
   };
 }
 
@@ -87,11 +156,11 @@ export function useAppClerk(): {
   signOut: (options?: { redirectUrl?: string }) => Promise<void> | void;
 } {
   const hasClerk = isClerkConfigured();
-  const devAuth = useContext(DevAuthContext);
+  const nativeAuth = useContext(AuthContext);
 
   if (!hasClerk) {
     return {
-      signOut: devAuth.signOut,
+      signOut: nativeAuth.signOut,
     };
   }
 

@@ -443,7 +443,12 @@ class EntityResolutionCascade:
 
         # If too few, fetch recent active companies as baseline candidates
         if len(candidates) < 5:
-            fallback_stmt = select(Company).where(Company.deleted_at.is_(None)).limit(30)
+            fallback_stmt = (
+                select(Company)
+                .where(Company.deleted_at.is_(None))
+                .options(selectinload(Company.identifiers), selectinload(Company.aliases))
+                .limit(30)
+            )
             fb_res = await self.db.execute(fallback_stmt)
             for c in fb_res.scalars().all():
                 if c not in candidates:

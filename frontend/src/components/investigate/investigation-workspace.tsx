@@ -13,7 +13,6 @@ import {
   Cpu,
   ArrowRight,
   ExternalLink,
-  RotateCcw,
   Clock,
   Zap,
 } from "lucide-react";
@@ -21,6 +20,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useUserStore } from "@/lib/store/user-store";
+import { useAppAuth } from "@/lib/auth/clerk-adapter";
 
 export interface InvestigationCitation {
   id: string;
@@ -66,69 +66,43 @@ export interface SuggestionItem {
   icon: string;
 }
 
-const DEFAULT_SUGGESTIONS: SuggestionItem[] = [
-  {
-    id: "sug-1",
-    title: "Taiwan & East Asia Exposure",
-    prompt: "Which tier-1 and tier-2 suppliers are exposed to geopolitical or trade restrictions in Taiwan?",
-    category: "exposure",
-    icon: "Globe",
-  },
-  {
-    id: "sug-2",
-    title: "Critical Single-Source Nodes",
-    prompt: "Identify all single-source suppliers with Criticality 4 or 5 and highlight potential bottlenecks.",
-    category: "concentration",
-    icon: "ShieldAlert",
-  },
-  {
-    id: "sug-3",
-    title: "Semiconductor Value Chain Trace",
-    prompt: "Trace our sub-tier dependencies on semiconductor fabrication and advanced packaging.",
-    category: "deep_tier",
-    icon: "Cpu",
-  },
-  {
-    id: "sug-4",
-    title: "Active Sanctions & Export Controls",
-    prompt: "Correlate recent OFAC and EU sanctions against our active supplier registry.",
-    category: "disruption",
-    icon: "AlertTriangle",
-  },
-];
-
 export function InvestigationWorkspace(): React.JSX.Element {
   const orgId = useUserStore((s) => s.orgId);
+  const { getToken } = useAppAuth();
   const [query, setQuery] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentResponse, setCurrentResponse] = useState<InvestigationResponse | null>(null);
   const [history, setHistory] = useState<InvestigationResponse[]>([]);
-  const [suggestions, setSuggestions] = useState<SuggestionItem[]>(DEFAULT_SUGGESTIONS);
+  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [activeTab, setActiveTab] = useState<"analysis" | "citations" | "trace">("analysis");
 
   const resultsEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch dynamic tenant suggestions
+  // Fetch dynamic tenant suggestions from live API
   useEffect(() => {
     async function loadSuggestions(): Promise<void> {
       try {
+        const token = await getToken();
         const headers: Record<string, string> = {};
-        if (orgId) {
-          headers["x-org-id"] = orgId;
-        }
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        if (orgId) headers["x-org-id"] = orgId;
+
         const res = await fetch("/api/v1/investigate/suggestions", { credentials: "include", headers });
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
+          if (Array.isArray(data)) {
             setSuggestions(data);
           }
+        } else {
+          setSuggestions([]);
         }
       } catch {
-        // Fall back to default suggestions
+        setSuggestions([]);
       }
     }
     loadSuggestions();
-  }, [orgId]);
+  }, [orgId, getToken]);
 
   const handleExecuteQuery = useCallback(
     async (queryText: string): Promise<void> => {
@@ -136,11 +110,12 @@ export function InvestigationWorkspace(): React.JSX.Element {
       if (!trimmed || isLoading) return;
 
       setIsLoading(true);
+      setErrorMessage(null);
       try {
+        const token = await getToken();
         const headers: Record<string, string> = { "Content-Type": "application/json" };
-        if (orgId) {
-          headers["x-org-id"] = orgId;
-        }
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        if (orgId) headers["x-org-id"] = orgId;
 
         const res = await fetch("/api/v1/investigate/query", {
           method: "POST",
@@ -161,17 +136,18 @@ export function InvestigationWorkspace(): React.JSX.Element {
           setHistory((prev) => [data, ...prev]);
           setQuery("");
         } else {
-          // Fallback response for offline or error states
           const errData = await res.json().catch(() => ({}));
           console.error("Investigation error:", errData);
+          setErrorMessage(errData.detail || errData.title || `Investigation request failed with HTTP ${res.status}`);
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Investigation request failed:", err);
+        setErrorMessage(err instanceof Error ? err.message : "Failed to connect to investigation service");
       } finally {
         setIsLoading(false);
       }
     },
-    [isLoading, orgId, history]
+    [isLoading, orgId, history, getToken]
   );
 
   const getRiskBadgeVariant = (
@@ -241,6 +217,20 @@ export function InvestigationWorkspace(): React.JSX.Element {
       {/* Query Bar & Suggestions */}
       <Card className="p-4 bg-card/80 backdrop-blur-xl border border-border/80 shadow-md">
         <div className="space-y-3">
+          {errorMessage && (
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="text-muted-foreground hover:text-foreground text-xs underline ml-2"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
           <div className="relative flex items-center">
             <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
@@ -549,17 +539,19 @@ export function InvestigationWorkspace(): React.JSX.Element {
               Inquire in natural language to interrogate your supplier graph, correlate real-time regulatory notices, or evaluate geopolitical exposure. Powered by Google Gemini with strict evidence citations.
             </p>
           </div>
-          <div className="pt-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleExecuteQuery(DEFAULT_SUGGESTIONS[0].prompt)}
-              className="text-xs border-primary/30 hover:bg-primary/10 text-primary gap-1.5"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Run Sample Investigation</span>
-            </Button>
-          </div>
+          {suggestions.length > 0 && (
+            <div className="pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleExecuteQuery(suggestions[0].prompt)}
+                className="text-xs border-primary/30 hover:bg-primary/10 text-primary gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Run Suggested: {suggestions[0].title}</span>
+              </Button>
+            </div>
+          )}
         </Card>
       )}
 

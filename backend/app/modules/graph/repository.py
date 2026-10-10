@@ -414,17 +414,17 @@ class GraphRepository:
                            1 AS depth,
                            ARRAY[r.from_company_id] AS path,
                            ARRAY[r.id] AS edge_path,
-                           r.confidence AS path_confidence
+                           r.confidence::numeric(5, 4) AS path_confidence
                     FROM supplier_relationships r
                     WHERE r.org_id = :org_id
                       AND r.deleted_at IS NULL
                       AND r.valid_to IS NULL
                       AND (
-                          (:root_id IS NULL AND (r.to_org_id = :org_id OR r.relationship_type = 'supplies_to' OR r.tier = 1))
+                          (CAST(:root_id AS UUID) IS NULL AND (r.to_org_id = :org_id OR r.relationship_type = 'supplies_to' OR r.tier = 1))
                           OR
-                          (:root_id IS NOT NULL AND (r.from_company_id = :root_id OR r.to_company_id = :root_id))
+                          (CAST(:root_id AS UUID) IS NOT NULL AND (r.from_company_id = CAST(:root_id AS UUID) OR r.to_company_id = CAST(:root_id AS UUID)))
                       )
-                      AND (:filter_types = false OR r.relationship_type = ANY(:types))
+                      AND (:filter_types = false OR r.relationship_type = ANY(CAST(:types AS TEXT[])))
                   UNION ALL
                     SELECT r.id AS edge_id,
                            r.from_company_id,
@@ -454,7 +454,7 @@ class GraphRepository:
                       AND r.valid_to IS NULL
                       AND NOT (r.from_company_id = ANY(x.path))
                       AND NOT (r.id = ANY(x.edge_path))
-                      AND (:filter_types = false OR r.relationship_type = ANY(:types))
+                      AND (:filter_types = false OR r.relationship_type = ANY(CAST(:types AS TEXT[])))
                 )
                 SELECT DISTINCT ON (edge_id) *
                 FROM reach
@@ -628,7 +628,7 @@ class GraphRepository:
                            1 AS depth,
                            ARRAY[r.from_company_id] AS path,
                            ARRAY[r.id] AS edge_path,
-                           r.confidence AS path_confidence
+                           r.confidence::numeric(5, 4) AS path_confidence
                     FROM supplier_relationships r
                     WHERE r.from_company_id = :from_id
                       AND r.org_id = :org_id

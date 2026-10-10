@@ -15,6 +15,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
  *      the Zustand user store with role/org data from the backend.
  *   3. Provides the Antigravity application shell (sidebar, header, error boundary).
  */
+import { cookies } from "next/headers";
 import { isClerkConfigured } from "@/lib/auth/clerk-config";
 
 export default async function DashboardLayout({
@@ -24,15 +25,15 @@ export default async function DashboardLayout({
 }) {
   let userId: string | null = null;
   if (!isClerkConfigured()) {
-    userId = "dev_user_id";
+    const cookieStore = await cookies();
+    const token = cookieStore.get("provenance_token")?.value;
+    userId = token || null;
   } else {
     try {
       const authObj = await auth();
       userId = authObj.userId;
     } catch {
-      if (process.env.NODE_ENV !== "production") {
-        userId = "dev_user_id";
-      }
+      userId = null;
     }
   }
 

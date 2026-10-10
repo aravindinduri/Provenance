@@ -193,3 +193,18 @@ async def validation_exception_handler(request: Request, exc: Exception) -> JSON
         detail="Request body or parameters failed validation",
         errors=field_errors,
     )
+
+
+async def ai_provider_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Handle AIProviderError gracefully with RFC 9457 shape and clean diagnostics."""
+    from app.modules.ai.provider import AIProviderError
+
+    assert isinstance(exc, AIProviderError)
+    status_code = exc.status_code if exc.status_code in (400, 401, 403, 404, 429, 502, 503) else status.HTTP_502_BAD_GATEWAY
+    return _problem(
+        request,
+        type_slug="ai-provider-error",
+        title="AI Service Error",
+        status_code=status_code,
+        detail=str(exc),
+    )

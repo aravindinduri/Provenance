@@ -132,3 +132,24 @@ class OrganizationMember(AuditMixin, SoftDeleteMixin, Base):
 
     def __repr__(self) -> str:
         return f"<OrganizationMember org={self.org_id} user={self.user_id} role={self.role!r}>"
+
+
+class User(AuditMixin, SoftDeleteMixin, Base):
+    """
+    Local user account for self-contained JWT authentication.
+    """
+
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
+
+    def __repr__(self) -> str:
+        return f"<User id={self.id} email={self.email!r}>"

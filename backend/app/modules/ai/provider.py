@@ -9,7 +9,9 @@ via configuration (settings.llm_provider) without vendor lock-in.
 from __future__ import annotations
 
 import abc
+import asyncio
 import json
+import os
 import re
 import time
 from typing import Any, TypeVar
@@ -91,9 +93,99 @@ class GeminiProvider(BaseAIProvider):
         default_model: str = "gemini-1.5-flash",
     ) -> None:
         settings = get_settings()
-        self.api_key = api_key or settings.gemini_api_key
+        self.api_key = (
+            api_key
+            or settings.gemini_api_key
+            or getattr(settings, "google_api_key", "")
+            or os.environ.get("GEMINI_API_KEY", "")
+            or os.environ.get("GOOGLE_API_KEY", "")
+        )
         self.base_url = (base_url or settings.gemini_base_url).rstrip("/")
         self.default_model = default_model
+
+    async def _post_gemini(
+        self,
+        target_model: str,
+        payload: dict[str, Any],
+        max_retries: int = 2,
+    ) -> dict[str, Any]:
+        """
+        Execute POST to Gemini API with automatic exponential backoff on 503 (high demand)
+        and 429 (rate limits), and candidate fallback to gemini-1.5-flash if needed.
+        """
+        clean_model = target_model.split("/")[-1] if "/" in target_model else target_model
+        # If user specified non-standard model name, map to valid Gemini release
+        if clean_model in ("gemini-3.5-flash", "gemini-3.5-pro", "gemini-3-flash"):
+            clean_model = "gemini-1.5-flash"
+
+        candidate_models = [clean_model]
+        # If model is pro or non-flash, provide gemini-1.5-flash as high-availability live fallback
+        if "pro" in clean_model.lower() and "gemini-1.5-flash" not in candidate_models:
+            candidate_models.append("gemini-1.5-flash")
+
+        last_error: AIProviderError | None = None
+
+        for model_name in candidate_models:
+            endpoint = f"{self.base_url}/v1beta/models/{model_name}:generateContent"
+            params = {"key": self.api_key} if self.api_key else {}
+            headers = {"Content-Type": "application/json"}
+            if self.api_key:
+                headers["x-goog-api-key"] = self.api_key
+
+            for attempt in range(max_retries + 1):
+                try:
+                    async with httpx.AsyncClient(timeout=60.0) as client:
+                        resp = await client.post(endpoint, params=params, headers=headers, json=payload)
+
+                    if resp.status_code == 200:
+                        return resp.json()
+
+                    # On 503 (High Demand / Spikes) or 429 (Rate Limit)
+                    if resp.status_code in (503, 429):
+                        logger.warning(
+                            "gemini_high_demand_spike",
+                            model=model_name,
+                            status=resp.status_code,
+                            attempt=attempt,
+                        )
+                        if attempt < max_retries:
+                            await asyncio.sleep(1.0 * (attempt + 1))
+                            continue
+                        last_error = AIProviderError(
+                            f"Gemini API model '{model_name}' is temporarily experiencing high demand (HTTP {resp.status_code}). "
+                            "Spikes in demand are usually temporary. Please retry in a few moments.",
+                            status_code=resp.status_code,
+                            details=resp.text,
+                        )
+                        break
+
+                    # If Google returns 404 (model not found for invalid key) or 401 (unsupported token type)
+                    if "is not found for API version" in resp.text or "Expected OAuth 2" in resp.text or "ACCESS_TOKEN_TYPE_UNSUPPORTED" in resp.text:
+                        raise AIProviderError(
+                            f"Google Gemini rejected the API credentials (HTTP {resp.status_code}). "
+                            "Please ensure GEMINI_API_KEY in .env is a valid Google Gemini API Key starting with 'AIzaSy' "
+                            "(generate a key for free at https://aistudio.google.com/app/apikey). "
+                            "Note: Google Cloud OAuth tokens starting with 'AQ.' are not supported by the Gemini AI Studio API.",
+                            status_code=resp.status_code,
+                            details=resp.text,
+                        )
+
+                    # Any other HTTP error (400, 401, 403, 404)
+                    raise AIProviderError(
+                        f"Gemini API returned error {resp.status_code}: {resp.text}",
+                        status_code=resp.status_code,
+                        details=resp.text,
+                    )
+                except httpx.RequestError as net_err:
+                    if attempt < max_retries:
+                        await asyncio.sleep(1.0 * (attempt + 1))
+                        continue
+                    last_error = AIProviderError(f"Gemini network connection error: {net_err}")
+                    break
+
+        if last_error:
+            raise last_error
+        raise AIProviderError("Gemini API call failed without response")
 
     async def generate_text(
         self,
@@ -104,15 +196,14 @@ class GeminiProvider(BaseAIProvider):
         temperature: float = 0.0,
         max_tokens: int = 1024,
     ) -> str:
-        target_model = model or self.default_model
-        if "/" in target_model:
-            target_model = target_model.split("/")[-1]
+        if not self.api_key:
+            raise AIProviderError(
+                "Gemini API key is not configured. Please set GEMINI_API_KEY (or GOOGLE_API_KEY) in .env "
+                "(get a free key at https://aistudio.google.com/app/apikey).",
+                status_code=401,
+            )
 
-        endpoint = f"{self.base_url}/v1beta/models/{target_model}:generateContent"
-        params = {"key": self.api_key} if self.api_key else {}
-        headers = {"Content-Type": "application/json"}
-        if self.api_key:
-            headers["x-goog-api-key"] = self.api_key
+        target_model = model or self.default_model
 
         contents: list[dict[str, Any]] = []
         if system_prompt:
@@ -138,15 +229,7 @@ class GeminiProvider(BaseAIProvider):
             },
         }
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(endpoint, params=params, headers=headers, json=payload)
-            if resp.status_code != 200:
-                raise AIProviderError(
-                    f"Gemini API returned error {resp.status_code}: {resp.text}",
-                    status_code=resp.status_code,
-                    details=resp.text,
-                )
-            data = resp.json()
+        data = await self._post_gemini(target_model, payload)
 
         try:
             candidates = data.get("candidates", [])
@@ -167,15 +250,14 @@ class GeminiProvider(BaseAIProvider):
         temperature: float = 0.0,
         max_tokens: int = 2048,
     ) -> T:
-        target_model = model or self.default_model
-        if "/" in target_model:
-            target_model = target_model.split("/")[-1]
+        if not self.api_key:
+            raise AIProviderError(
+                "Gemini API key is not configured. Please set GEMINI_API_KEY (or GOOGLE_API_KEY) in .env "
+                "(get a free key at https://aistudio.google.com/app/apikey).",
+                status_code=401,
+            )
 
-        endpoint = f"{self.base_url}/v1beta/models/{target_model}:generateContent"
-        params = {"key": self.api_key} if self.api_key else {}
-        headers = {"Content-Type": "application/json"}
-        if self.api_key:
-            headers["x-goog-api-key"] = self.api_key
+        target_model = model or self.default_model
 
         schema_json = json.dumps(schema.model_json_schema())
         instruction = (
@@ -197,15 +279,7 @@ class GeminiProvider(BaseAIProvider):
             },
         }
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(endpoint, params=params, headers=headers, json=payload)
-            if resp.status_code != 200:
-                raise AIProviderError(
-                    f"Gemini API returned error {resp.status_code}: {resp.text}",
-                    status_code=resp.status_code,
-                    details=resp.text,
-                )
-            data = resp.json()
+        data = await self._post_gemini(target_model, payload)
 
         try:
             candidates = data.get("candidates", [])
@@ -455,8 +529,10 @@ class MockProvider(BaseAIProvider):
                 mock_data[field_name] = {}
             elif "decision" in field_name:
                 mock_data[field_name] = "match"
+            elif "risk" in field_name:
+                mock_data[field_name] = "medium"
             else:
-                mock_data[field_name] = f"Mock {field_name}"
+                mock_data[field_name] = f"Test {field_name}"
         return schema.model_validate(mock_data)
 
 

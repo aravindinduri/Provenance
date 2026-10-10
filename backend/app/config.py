@@ -39,17 +39,22 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://localhost:6379/1"
     celery_result_backend: str = "redis://localhost:6379/2"
 
-    # ── Auth (Clerk) ──────────────────────────────────────────────────────────
+    # ── Auth (Self-Contained JWT & Clerk) ─────────────────────────────────────
+    jwt_secret: str = "provenance-production-secret-jwt-signing-key-32bytes-min"
+    jwt_algorithm: str = "HS256"
+    jwt_expiration_minutes: int = 1440  # 24 hours
     clerk_secret_key: str = ""
     clerk_publishable_key: str = ""
+    next_public_clerk_publishable_key: str = ""
     clerk_jwks_url: str = ""
     clerk_webhook_secret: str = ""
     auth_issuer: str = ""
     auth_audience: str = ""
 
     # ── LLM ──────────────────────────────────────────────────────────────────
-    llm_provider: str = "gemini"  # gemini | anthropic | openai | mock
+    llm_provider: str = "gemini" 
     gemini_api_key: str = ""
+    google_api_key: str = ""
     gemini_base_url: str = "https://generativelanguage.googleapis.com"
     anthropic_api_key: str = ""
     openai_api_key: str = ""
@@ -57,7 +62,7 @@ class Settings(BaseSettings):
     llm_model_classification: str = "gemini-1.5-flash"
     llm_model_entity_resolution: str = "gemini-1.5-flash"
     llm_model_explanation: str = "gemini-1.5-flash"
-    llm_model_investigation: str = "gemini-1.5-pro"
+    llm_model_investigation: str = "gemini-1.5-flash"
     llm_max_retries: int = 2
     llm_timeout_seconds: int = 60
     default_monthly_token_budget: int = 5_000_000

@@ -21,6 +21,7 @@ provider binding in app/core/deps.py.  No other file changes.
 
 from __future__ import annotations
 
+import base64
 import json
 import time
 from typing import Any
@@ -49,6 +50,29 @@ _jwks_fetched_at: float = 0.0
 _JWKS_TTL_SECONDS = 3600  # 1 hour
 
 
+def resolve_clerk_jwks_url() -> str | None:
+    """Return configured JWKS URL or auto-derive it from Clerk publishable key."""
+    settings = get_settings()
+    if settings.clerk_jwks_url:
+        return settings.clerk_jwks_url
+
+    pub_key = (
+        settings.clerk_publishable_key
+        or getattr(settings, "next_public_clerk_publishable_key", "")
+    )
+    if pub_key and (pub_key.startswith("pk_test_") or pub_key.startswith("pk_live_")):
+        try:
+            parts = pub_key.split("_", 2)
+            if len(parts) >= 3:
+                encoded = parts[2]
+                domain = base64.b64decode(encoded).decode("utf-8").rstrip("$")
+                if domain:
+                    return f"https://{domain}/.well-known/jwks.json"
+        except Exception as exc:
+            logger.debug("clerk_jwks_derive_failed", error=str(exc))
+    return None
+
+
 async def _fetch_jwks() -> dict[str, Any]:
     """Return the cached JWKS, refreshing if stale."""
     global _jwks_cache, _jwks_fetched_at
@@ -57,10 +81,12 @@ async def _fetch_jwks() -> dict[str, Any]:
     if _jwks_cache and (now - _jwks_fetched_at) < _JWKS_TTL_SECONDS:
         return _jwks_cache
 
-    settings = get_settings()
-    url = settings.clerk_jwks_url
+    url = resolve_clerk_jwks_url()
     if not url:
-        raise AuthenticationError("CLERK_JWKS_URL is not configured")
+        raise AuthenticationError(
+            "CLERK_JWKS_URL is not configured and could not be derived from CLERK_PUBLISHABLE_KEY. "
+            "Please configure CLERK_JWKS_URL (e.g. https://<clerk-domain>/.well-known/jwks.json) in .env"
+        )
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -68,11 +94,11 @@ async def _fetch_jwks() -> dict[str, Any]:
             response.raise_for_status()
             data: dict[str, Any] = response.json()
     except httpx.HTTPError as exc:
-        logger.warning("clerk_jwks_fetch_failed", error=str(exc))
+        logger.warning("clerk_jwks_fetch_failed", error=str(exc), url=url)
         if _jwks_cache:
             # Serve stale rather than break all requests
             return _jwks_cache
-        raise AuthenticationError("Unable to fetch JWKS from Clerk") from exc
+        raise AuthenticationError(f"Unable to fetch JWKS from Clerk ({url}): {exc}") from exc
 
     _jwks_cache = data
     _jwks_fetched_at = now

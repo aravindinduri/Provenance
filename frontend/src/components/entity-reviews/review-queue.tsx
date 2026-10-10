@@ -26,6 +26,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useAppAuth } from "@/lib/auth/clerk-adapter";
 
 export interface CandidateItem {
   company_id: string;
@@ -62,6 +63,7 @@ export interface ReviewItem {
 }
 
 export function EntityReviewQueue(): React.JSX.Element {
+  const { getToken } = useAppAuth();
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("pending");
@@ -79,20 +81,27 @@ export function EntityReviewQueue(): React.JSX.Element {
   const fetchReviews = useCallback(async () => {
     setIsLoading(true);
     try {
+      const token = await getToken();
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const url = statusFilter === "all"
         ? "/api/v1/entity-reviews"
         : `/api/v1/entity-reviews?status=${statusFilter}`;
-      const res = await fetch(url);
+      const res = await fetch(url, { headers });
       if (res.ok) {
         const data = await res.json();
         setReviews(data.data || []);
+      } else {
+        setReviews([]);
       }
     } catch (err) {
       console.error("Failed to fetch entity reviews:", err);
+      setReviews([]);
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, getToken]);
 
   useEffect(() => {
     fetchReviews();
@@ -105,9 +114,13 @@ export function EntityReviewQueue(): React.JSX.Element {
   ) => {
     setActionLoadingId(reviewId);
     try {
+      const token = await getToken();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const res = await fetch(`/api/v1/entity-reviews/${reviewId}/resolve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           action,
           company_id: companyId,

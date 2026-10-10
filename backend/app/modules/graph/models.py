@@ -32,6 +32,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import AuditMixin, Base, SoftDeleteMixin
+from app.modules.events.models import SourceRecord  # noqa: F401
 
 
 class SupplierRelationship(AuditMixin, SoftDeleteMixin, Base):

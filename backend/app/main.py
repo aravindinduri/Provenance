@@ -84,10 +84,14 @@ def create_app() -> FastAPI:
     application.add_middleware(SlowAPIMiddleware)
 
     # ── Exception handlers ────────────────────────────────────────────────────
+    from app.modules.ai.provider import AIProviderError
+    from app.core.errors import ai_provider_error_handler
+
     application.add_exception_handler(AuthenticationError, authentication_error_handler)  # type: ignore[arg-type]
     application.add_exception_handler(AuthorizationError, authorization_error_handler)  # type: ignore[arg-type]
     application.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
     application.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)  # type: ignore[arg-type]
+    application.add_exception_handler(AIProviderError, ai_provider_error_handler)  # type: ignore[arg-type]
 
     # ── Routers ───────────────────────────────────────────────────────────────
     from app.api.v1.health import router as health_router

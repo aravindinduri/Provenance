@@ -184,23 +184,16 @@ CONVERSATION HISTORY:
 {chr(10).join([f"{m.role}: {m.content}" for m in request.conversation_history[-4:]]) if request.conversation_history else 'None'}
 """
 
-        try:
-            synthesis = await self.gateway.execute_structured(
-                prompt=user_prompt,
-                schema=InvestigationSynthesisOutput,
-                task="investigation",
-                system_prompt=system_prompt,
-                temperature=0.1,
-                org_id=org_id,
-            )
-            model_name = self.settings.llm_model_entity_resolution
-            provider_name = self.settings.llm_provider
-        except Exception as exc:
-            logger.warning("investigation_agent_llm_fallback", error=str(exc))
-            # Graceful deterministic synthesis if LLM service is offline
-            model_name = "provenance-deterministic-fallback"
-            provider_name = "deterministic"
-            synthesis = self._build_deterministic_synthesis(query_text, supplier_rows, events)
+        synthesis = await self.gateway.execute_structured(
+            prompt=user_prompt,
+            schema=InvestigationSynthesisOutput,
+            task="investigation",
+            system_prompt=system_prompt,
+            temperature=0.1,
+            org_id=org_id,
+        )
+        model_name = self.settings.llm_model_investigation
+        provider_name = self.settings.llm_provider
 
         step4_duration = int((time.perf_counter() - step4_start) * 1000)
         trace_steps.append(
@@ -240,46 +233,6 @@ CONVERSATION HISTORY:
             latency_ms=total_latency_ms,
         )
 
-    def _build_deterministic_synthesis(
-        self,
-        query: str,
-        supplier_rows: list[Any],
-        events: list[Any],
-    ) -> InvestigationSynthesisOutput:
-        """Deterministic fallback when external AI API is unreachable."""
-        supplier_count = len(supplier_rows)
-        countries = list({c.country for _, c in supplier_rows if c.country})
-        high_crit_count = sum(1 for r, _ in supplier_rows if (r.criticality or 0) >= 4)
-
-        summary = (
-            f"Investigation evaluated {supplier_count} active supplier relationships across {len(countries)} countries "
-            f"in your supply graph in response to inquiry: '{query[:80]}'."
-        )
-
-        detailed = (
-            f"### Supply Base Exposure Assessment\n\n"
-            f"- **Tenant Footprint:** Your organization maintains active contracts with **{supplier_count} suppliers** across key jurisdictions: {', '.join(countries[:6]) or 'Unspecified'}.\n"
-            f"- **Critical Nodes:** **{high_crit_count} suppliers** are flagged as Criticality 4 or 5, representing essential dependencies requiring rigorous disruption monitoring.\n"
-            f"- **Signal Correlation:** Correlated against {len(events)} active geopolitical, trade, and sanctions notices in the Provenance event registry.\n\n"
-            f"Based on current graph topology, potential concentration risks are highest in single-source supplier nodes and multi-tier sub-tier cross-dependencies."
-        )
-
-        return InvestigationSynthesisOutput(
-            summary=summary,
-            detailed_analysis=detailed,
-            risk_level="high" if high_crit_count > 0 else "medium",
-            key_findings=[
-                f"{supplier_count} active suppliers evaluated in tenant supply graph",
-                f"{high_crit_count} suppliers classified at Criticality 4 or 5",
-                f"Multi-country footprint spanning {len(countries)} jurisdictions",
-            ],
-            recommended_actions=[
-                "Initiate dual-sourcing pre-qualification for high-criticality tier-1 suppliers.",
-                "Verify Level 2 parent/subsidiary ownership structures via GLEIF enrichment.",
-                "Set automated alert notification thresholds for trade restriction events in key supplier jurisdictions.",
-            ],
-        )
-
     async def get_suggestions(self, *, org_id: uuid.UUID) -> list[InvestigationSuggestion]:
         """Provides context-aware query starter suggestions for the tenant."""
         supplier_stmt = (
@@ -292,14 +245,18 @@ CONVERSATION HISTORY:
         res = await self.db.execute(supplier_stmt)
         countries = [c for c in res.scalars().all() if c]
 
-        c1 = countries[0] if countries else "Taiwan"
-        c2 = countries[1] if len(countries) > 1 else "Germany"
+        if countries:
+            title_exposure = f"Geopolitical Exposure to {countries[0]}"
+            prompt_exposure = f"Which of our registered suppliers are exposed to trade restrictions or export bans in {countries[0]}?"
+        else:
+            title_exposure = "Geopolitical Trade & Sanctions Exposure"
+            prompt_exposure = "Which of our registered suppliers are exposed to trade restrictions, sanctions, or export bans?"
 
         return [
             InvestigationSuggestion(
                 id="sug-1",
-                title=f"Geopolitical Exposure to {c1}",
-                prompt=f"Which of our suppliers are exposed to trade restrictions or export bans in {c1}?",
+                title=title_exposure,
+                prompt=prompt_exposure,
                 category="exposure",
                 icon="Globe",
             ),
@@ -312,15 +269,15 @@ CONVERSATION HISTORY:
             ),
             InvestigationSuggestion(
                 id="sug-3",
-                title="Semiconductor Disruption Trace",
-                prompt="Trace our dependency on semiconductor manufacturing and sub-tier suppliers.",
+                title="Critical Material Disruption Trace",
+                prompt="Trace dependencies on single-source sub-tier suppliers across our supply network.",
                 category="deep_tier",
                 icon="Cpu",
             ),
             InvestigationSuggestion(
                 id="sug-4",
-                title="Weekly Regulatory Signal Summary",
-                prompt="Summarize recent sanctions and tariff events that intersect with our supply base this month.",
+                title="Regulatory Signal Impact Assessment",
+                prompt="Summarize recent regulatory, sanctions, and tariff events that intersect with our supply base.",
                 category="disruption",
                 icon="AlertTriangle",
             ),
