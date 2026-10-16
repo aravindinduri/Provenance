@@ -30,7 +30,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MetricCard } from "@/components/ui/metric-card";
 import {
   Dialog,
   DialogContent,
@@ -147,7 +146,6 @@ export default function AlertsPage() {
 
   // Fetch alerts with current filters
   const fetchAlerts = useCallback(async () => {
-    if (!orgId) return;
     setIsLoading(true);
     setErrorMsg(null);
     try {
@@ -357,39 +355,8 @@ export default function AlertsPage() {
         </div>
       )}
 
-      {/* Metric Cards KPI Row (Dynamically Computed) */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          title="Total Signals"
-          value={counts?.total ?? alerts.length}
-          subtitle="Monitored supply chain signals"
-          icon={<AlertTriangle className="h-4 w-4" />}
-          accent="default"
-        />
-        <MetricCard
-          title="Critical Exposures"
-          value={counts?.critical ?? alerts.filter((a) => a.severity_band === "CRITICAL").length}
-          subtitle="Immediate operational impact"
-          icon={<Flame className="h-4 w-4" />}
-          accent="critical"
-        />
-        <MetricCard
-          title="In Investigation"
-          value={counts?.investigating ?? alerts.filter((a) => a.status === "investigating").length}
-          subtitle="Active root-cause triage"
-          icon={<Sparkles className="h-4 w-4" />}
-          accent="high"
-        />
-        <MetricCard
-          title="Resolved"
-          value={counts?.resolved ?? alerts.filter((a) => a.status === "resolved").length}
-          subtitle="Mitigations applied & verified"
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          accent="emerald"
-        />
-      </div>
-
       {/* Filter Toolbar & Status Tabs */}
+
       <Card className="glass-panel p-4">
         <div className="flex flex-col gap-4">
           {/* Status Tabs */}

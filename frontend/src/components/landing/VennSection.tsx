@@ -4,34 +4,37 @@ import React, { useState } from "react";
 import { CornerMarks } from "./CornerMarks";
 import { ProvenanceLogo } from "./ProvenanceLogo";
 
-export function VennSection() {
+export function VennSection(): React.ReactElement {
   const [activeCircle, setActiveCircle] = useState<string | null>(null);
 
   return (
     <section className="py-24 bg-[#FAF9F6] border-b border-neutral-200/60 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="relative max-w-4xl mb-16 p-4 sm:p-6 bg-white/40 rounded-xl border border-neutral-200/60">
+        <div data-reveal className="relative max-w-4xl mb-16 p-4 sm:p-6 bg-white/40 rounded-xl border border-neutral-200/60">
           <CornerMarks size={8} color="#c7c7c7" thickness={1} offset={-4} />
 
           <div className="flex items-center gap-2 mb-3">
             <span className="w-2.5 h-2.5 rounded-full bg-[#FA651E]" />
             <span className="text-xs font-mono uppercase tracking-wider text-neutral-500 font-semibold">
-              Consolidated Risk Intelligence
+              Consolidated Architecture
             </span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#0A0A0A] leading-tight mb-4">
-            One platform. Replaces your <span className="text-[#FA651E]">fragmented risk stack</span>.
+            One platform. Replaces your <span className="text-[#FA651E]">fragmented procurement &amp; risk stack</span>.
           </h2>
 
           <p className="text-base sm:text-lg text-neutral-600 font-normal">
-            Legacy procurement tools are blind to external shocks, news monitors have no internal context, and spreadsheets rot. Provenance connects them all deterministically.
+            Legacy ERPs are blind to external shocks, news monitors have no BOM or purchase order context, spreadsheets rot, and generic AI chatbots hallucinate numbers. Provenance unifies them into an agentic, deterministic command center.
           </p>
         </div>
 
         {/* 4-Circle Venn Diagram Container */}
-        <div className="relative max-w-4xl mx-auto bg-white rounded-2xl border border-neutral-200 p-8 sm:p-14 shadow-sm">
+        <div
+          data-reveal
+          className="relative max-w-4xl mx-auto bg-white rounded-2xl border border-neutral-200 p-8 sm:p-14 shadow-sm"
+        >
           <CornerMarks size={12} color="#FA651E" thickness={1.5} offset={-6} />
 
           <div className="relative w-full aspect-square max-w-[580px] mx-auto flex items-center justify-center">
@@ -51,23 +54,22 @@ export function VennSection() {
             <div
               onMouseEnter={() => setActiveCircle("erp")}
               onMouseLeave={() => setActiveCircle(null)}
-              className={`absolute top-6 left-6 w-[270px] sm:w-[310px] h-[270px] sm:h-[310px] rounded-full border border-neutral-400/80 transition-all duration-300 flex flex-col items-center justify-center p-6 ${
-                activeCircle === "erp" ? "bg-orange-500/10 border-[#FA651E] scale-102" : "bg-neutral-50/20"
-              }`}
+              className={`absolute top-6 left-6 w-[270px] sm:w-[310px] h-[270px] sm:h-[310px] rounded-full border border-neutral-400/80 transition-all duration-300 flex flex-col items-center justify-center p-6 ${activeCircle === "erp" ? "bg-orange-500/10 border-[#FA651E] scale-102" : "bg-neutral-50/20"
+                }`}
             >
               <div className="absolute top-10 left-8 text-left">
                 <span className="text-sm sm:text-base font-bold text-[#FA651E] tracking-tight block">
                   Legacy ERP &amp; S2P
                 </span>
-                <span className="text-[10px] font-mono text-neutral-400">Internal data only</span>
+                <span className="text-[10px] font-mono text-neutral-400">Internal transactional data only</span>
                 <div className="mt-2 space-y-1.5 text-xs text-neutral-700 font-semibold">
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-neutral-900" />
-                    <span>SAP Ariba</span>
+                    <span>SAP S/4HANA &amp; Ariba</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
-                    <span>Coupa</span>
+                    <span>Coupa Procurement</span>
                   </div>
                 </div>
               </div>
@@ -77,22 +79,21 @@ export function VennSection() {
             <div
               onMouseEnter={() => setActiveCircle("news")}
               onMouseLeave={() => setActiveCircle(null)}
-              className={`absolute top-6 right-6 w-[270px] sm:w-[310px] h-[270px] sm:h-[310px] rounded-full border border-neutral-400/80 transition-all duration-300 flex flex-col items-center justify-center p-6 ${
-                activeCircle === "news" ? "bg-orange-500/10 border-[#FA651E] scale-102" : "bg-neutral-50/20"
-              }`}
+              className={`absolute top-6 right-6 w-[270px] sm:w-[310px] h-[270px] sm:h-[310px] rounded-full border border-neutral-400/80 transition-all duration-300 flex flex-col items-center justify-center p-6 ${activeCircle === "news" ? "bg-orange-500/10 border-[#FA651E] scale-102" : "bg-neutral-50/20"
+                }`}
             >
               <div className="absolute top-10 right-8 text-right">
                 <span className="text-sm sm:text-base font-bold text-neutral-900 tracking-tight block">
-                  Unlinked News Feeds
+                  Isolated Threat Feeds
                 </span>
-                <span className="text-[10px] font-mono text-neutral-400">No BOM or spend context</span>
+                <span className="text-[10px] font-mono text-neutral-400">No BOM or purchase order context</span>
                 <div className="mt-2 space-y-1.5 text-xs text-neutral-700 font-semibold flex flex-col items-end">
                   <div className="flex items-center gap-1.5">
-                    <span>Google Alerts</span>
+                    <span>Google Alerts &amp; News</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span>Kharon / World-Check</span>
+                    <span>World-Check Sanctions</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-neutral-800" />
                   </div>
                 </div>
@@ -103,15 +104,14 @@ export function VennSection() {
             <div
               onMouseEnter={() => setActiveCircle("sheets")}
               onMouseLeave={() => setActiveCircle(null)}
-              className={`absolute bottom-6 left-6 w-[270px] sm:w-[310px] h-[270px] sm:h-[310px] rounded-full border border-neutral-400/80 transition-all duration-300 flex flex-col items-center justify-center p-6 ${
-                activeCircle === "sheets" ? "bg-orange-500/10 border-[#FA651E] scale-102" : "bg-neutral-50/20"
-              }`}
+              className={`absolute bottom-6 left-6 w-[270px] sm:w-[310px] h-[270px] sm:h-[310px] rounded-full border border-neutral-400/80 transition-all duration-300 flex flex-col items-center justify-center p-6 ${activeCircle === "sheets" ? "bg-orange-500/10 border-[#FA651E] scale-102" : "bg-neutral-50/20"
+                }`}
             >
               <div className="absolute bottom-10 left-8 text-left">
                 <span className="text-sm sm:text-base font-bold text-neutral-900 tracking-tight block">
-                  Manual Spreadsheets
+                  Manual Spreadsheets &amp; Email
                 </span>
-                <span className="text-[10px] font-mono text-neutral-400">Stale, zero sub-tier view</span>
+                <span className="text-[10px] font-mono text-neutral-400">Stale records, slow approvals</span>
                 <div className="mt-2 space-y-1.5 text-xs text-neutral-700 font-semibold">
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-700" />
@@ -119,7 +119,7 @@ export function VennSection() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
-                    <span>Isolated BI Exports</span>
+                    <span>Ad-hoc Email Approvals</span>
                   </div>
                 </div>
               </div>
@@ -129,46 +129,38 @@ export function VennSection() {
             <div
               onMouseEnter={() => setActiveCircle("ai")}
               onMouseLeave={() => setActiveCircle(null)}
-              className={`absolute bottom-6 right-6 w-[270px] sm:w-[310px] h-[270px] sm:h-[310px] rounded-full border border-neutral-400/80 transition-all duration-300 flex flex-col items-center justify-center p-6 ${
-                activeCircle === "ai" ? "bg-orange-500/10 border-[#FA651E] scale-102" : "bg-neutral-50/20"
-              }`}
+              className={`absolute bottom-6 right-6 w-[270px] sm:w-[310px] h-[270px] sm:h-[310px] rounded-full border border-neutral-400/80 transition-all duration-300 flex flex-col items-center justify-center p-6 ${activeCircle === "ai" ? "bg-orange-500/10 border-[#FA651E] scale-102" : "bg-neutral-50/20"
+                }`}
             >
               <div className="absolute bottom-10 right-8 text-right">
                 <span className="text-sm sm:text-base font-bold text-[#FA651E] tracking-tight block">
                   Generic AI Chatbots
                 </span>
-                <span className="text-[10px] font-mono text-neutral-400">Hallucinated arithmetic</span>
+                <span className="text-[10px] font-mono text-neutral-400">Ungrounded, fabricated numbers</span>
                 <div className="mt-2 space-y-1.5 text-xs text-neutral-700 font-semibold flex flex-col items-end">
                   <div className="flex items-center gap-1.5">
-                    <span>Unbounded Copilots</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+                    <span>Ungrounded LLM Wrappers</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span>ChatGPT Wrappers</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    <span>No Workflow Integration</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Center Intersection: Provenance Core Nexus */}
-            <div className="relative z-20 w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-white border-2 border-[#FA651E] shadow-[0_0_35px_rgba(250,101,30,0.35)] flex flex-col items-center justify-center p-2 group hover:scale-105 transition-transform text-center">
-              <CornerMarks size={6} color="#FA651E" thickness={1} offset={-2} />
-              <ProvenanceLogo size="sm" inverted={false} />
-              <span className="text-[9px] font-mono text-neutral-400 mt-1 uppercase tracking-widest font-bold">
-                DETERMINISTIC NEXUS
-              </span>
-            </div>
+            {/* Center: Provenance Unified Solution */}
+            <div className="relative z-20 w-44 h-44 sm:w-48 sm:h-48 rounded-full bg-white border-2 border-[#FA651E] shadow-[0_10px_35px_rgba(250,101,30,0.15)] flex flex-col items-center justify-center p-4 text-center group hover:scale-105 transition-transform duration-300">
+              <CornerMarks size={8} color="#FA651E" thickness={1.2} offset={-4} />
 
-            {/* Pipeline Callouts */}
-            <div className="absolute top-1/4 -left-4 sm:left-0 px-2.5 py-1 bg-white border border-neutral-200 rounded-md text-[11px] font-mono font-semibold text-neutral-600 shadow-sm">
-              GLEIF Level-2
-            </div>
-            <div className="absolute bottom-1/4 -left-4 sm:left-0 px-2.5 py-1 bg-white border border-neutral-200 rounded-md text-[11px] font-mono font-semibold text-neutral-600 shadow-sm">
-              Recursive SQL
-            </div>
-            <div className="absolute bottom-1/4 -right-4 sm:right-0 px-2.5 py-1 bg-white border border-neutral-200 rounded-md text-[11px] font-mono font-semibold text-neutral-600 shadow-sm">
-              Evidence Citations
+              <div className="mb-1.5 scale-90">
+                <ProvenanceLogo size="sm" inverted={false} />
+              </div>
+
+              <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FA651E]/10 text-[#FA651E] text-[10px] font-mono font-bold">
+                <span>Unified S2P Core</span>
+              </div>
             </div>
           </div>
         </div>

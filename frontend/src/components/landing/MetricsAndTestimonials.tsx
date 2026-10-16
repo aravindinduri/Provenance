@@ -2,21 +2,21 @@
 
 import React from "react";
 import { CornerMarks } from "./CornerMarks";
-import { ShieldCheck, Quote } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
-export function MetricsAndTestimonials() {
+export function MetricsAndTestimonials(): React.ReactElement {
   const metrics = [
     {
       value: "100%",
-      sub: "Deterministic & auditable risk calculations",
+      sub: "Deterministic & auditable risk calculations (0% math hallucinations)",
     },
     {
-      value: "< 5 Mins",
-      sub: "From official gazette publication to exposure alert",
+      value: "85% Faster",
+      sub: "Requisition-to-approval cycle times with Agent Trace copilot",
     },
     {
       value: "$14.8M",
-      sub: "Average disruption spend protected per 1,000 suppliers",
+      sub: "Average disruption and maverick spend protected per 1,000 suppliers",
     },
   ];
 
@@ -28,7 +28,7 @@ export function MetricsAndTestimonials() {
       initials: "MV",
       badgeColor: "bg-blue-100 text-blue-800",
       quote:
-        "Provenance detected the Chinese graphite export restrictions 11 days before our primary Tier-1 broker sent an alert. We pre-qualified an alternate Korean supplier before market prices surged 40%.",
+        "Provenance detected graphite export curbs 11 days before our primary broker alerted us. Our team pre-qualified an alternate supplier in Europe through Agent Trace before spot prices surged 40%.",
     },
     {
       name: "Elena Rostova",
@@ -37,7 +37,7 @@ export function MetricsAndTestimonials() {
       initials: "ER",
       badgeColor: "bg-orange-100 text-[#9A3412]",
       quote:
-        "The multi-tier graph revealed that 4 of our Tier-1 wiring harness vendors were relying on the same sanctioned copper smelter in Central Asia. We eliminated a catastrophic single-point-of-failure in one afternoon.",
+        "The multi-tier graph revealed that 4 of our Tier-1 wiring harness vendors were relying on the same sanctioned copper smelter. We eliminated a catastrophic single-point-of-failure in one afternoon.",
     },
     {
       name: "David Chen",
@@ -46,16 +46,16 @@ export function MetricsAndTestimonials() {
       initials: "DC",
       badgeColor: "bg-emerald-100 text-emerald-800",
       quote:
-        "Every alert comes with the exact Federal Register volume and contract purchase order citation. Zero hallucinated AI summaries. Our general counsel accepts Provenance reports directly for export filings.",
+        "Every approval packet comes with exact Federal Register legal citations and PO lines. Zero hallucinated AI summaries. Our general counsel accepts Provenance reports directly for export filings.",
     },
     {
       name: "Sarah Al-Mansoor",
-      role: "Category Director, Critical Minerals",
+      role: "Category Director, Critical Materials",
       company: "Renewable Energy Grid Solutions",
       initials: "SA",
       badgeColor: "bg-purple-100 text-purple-800",
       quote:
-        "The spend leakage detection with regulatory overlap is extraordinary. It flagged an uncontracted price spike right when the sub-supplier was placed under EU dual-use review. Saved us over $2.1M.",
+        "Agent Trace cut our requisition drafting and quote comparisons from days to minutes, while Delegation of Authority rules prevent maverick spending effortlessly. It is indispensable.",
     },
   ];
 
@@ -63,7 +63,7 @@ export function MetricsAndTestimonials() {
     <section id="case-studies" className="py-24 bg-[#FAF9F6] border-b border-neutral-200/60 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Headline with Registration Frame */}
-        <div className="relative max-w-4xl mb-16 p-6 sm:p-8 bg-white/40 rounded-xl border border-neutral-200/60">
+        <div data-reveal className="relative max-w-4xl mb-16 p-6 sm:p-8 bg-white/40 rounded-xl border border-neutral-200/60">
           <CornerMarks size={8} color="#c7c7c7" thickness={1} offset={-4} />
 
           <div className="flex items-center gap-2 mb-3">
@@ -74,16 +74,17 @@ export function MetricsAndTestimonials() {
           </div>
 
           <h2 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#0A0A0A] leading-[1.12]">
-            Risk leaders stopped discovering disruptions from late shipments.{" "}
-            <span className="text-[#FA651E]">Provenance alerts them first</span>.
+            Procurement teams stop chasing late shipments.{" "}
+            <span className="text-[#FA651E]">Provenance coordinates action first</span>.
           </h2>
         </div>
 
-        {/* 3 Metric Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20 text-center">
+        {/* 3 Metric Stats with Scroll Stagger */}
+        <div data-reveal-stagger className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20 text-center">
           {metrics.map((m) => (
             <div
               key={m.value}
+              data-reveal-item
               className="relative p-8 bg-white rounded-xl border border-neutral-200 shadow-sm flex flex-col items-center justify-center hover:border-orange-200 transition-all"
             >
               <CornerMarks size={8} color="#d4d4d4" thickness={1} offset={-4} />
@@ -97,11 +98,12 @@ export function MetricsAndTestimonials() {
           ))}
         </div>
 
-        {/* Testimonials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Testimonials Grid with Scroll Stagger */}
+        <div data-reveal-stagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {testimonials.map((t) => (
             <div
               key={t.name}
+              data-reveal-item
               className="relative bg-white rounded-xl border border-neutral-200 p-6 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-orange-200 transition-all group"
             >
               <CornerMarks size={8} color="#d4d4d4" thickness={1} offset={-4} />
@@ -130,7 +132,7 @@ export function MetricsAndTestimonials() {
               <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center justify-between text-[11px] font-mono text-neutral-400">
                 <span className="flex items-center gap-1 text-emerald-700">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  Verified Customer
+                  Verified Enterprise User
                 </span>
               </div>
             </div>

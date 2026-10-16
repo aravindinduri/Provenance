@@ -27,11 +27,24 @@ export default function SignUpPage(): React.JSX.Element {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [orgName, setOrgName] = useState("");
+  const [authMode, setAuthMode] = useState<"platform" | "clerk">("platform");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  if (hasClerk) {
-    return <ClerkSignUp />;
+  if (hasClerk && authMode === "clerk") {
+    return (
+      <div className="flex flex-col items-center gap-3 w-full max-w-md">
+        <ClerkSignUp />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setAuthMode("platform")}
+          className="text-xs text-neutral-500 hover:text-neutral-900"
+        >
+          ← Use Platform Registration
+        </Button>
+      </div>
+    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

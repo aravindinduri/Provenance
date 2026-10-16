@@ -17,17 +17,20 @@ import { fetchMe, type MeOut } from "@/lib/api/me";
 export const ME_QUERY_KEY = ["auth", "me"] as const;
 
 export function useMe() {
-  const { getToken, isSignedIn } = useAppAuth();
+  const { getToken } = useAppAuth();
 
   return useQuery<MeOut | null, Error>({
     queryKey: ME_QUERY_KEY,
-    enabled: !!isSignedIn,
     staleTime: 5 * 60 * 1000, // 5 min
     gcTime: 10 * 60 * 1000,
+    retry: false,
     queryFn: async () => {
       const token = await getToken();
-      if (!token) return null;
-      return await fetchMe(token);
+      try {
+        return await fetchMe(token);
+      } catch {
+        return null;
+      }
     },
   });
 }

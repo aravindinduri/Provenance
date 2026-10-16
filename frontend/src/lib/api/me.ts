@@ -5,17 +5,21 @@ export type OrganizationOut = components["schemas"]["OrganizationOut"];
 
 
 /** Fetch the current user from the backend. Throws on non-2xx. */
-export async function fetchMe(token: string): Promise<MeOut> {
+export async function fetchMe(token?: string | null): Promise<MeOut> {
   const baseUrl =
     typeof window !== "undefined"
       ? "/api/v1"
       : (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000") + "/v1";
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${baseUrl}/auth/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers,
     // Don't cache — always get fresh role/org data
     cache: "no-store",
   });

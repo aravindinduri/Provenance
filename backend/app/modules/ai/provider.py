@@ -2,7 +2,7 @@
 app/modules/ai/provider.py — Vendor-neutral, interchangeable AI provider abstractions.
 
 Architecture reference: §C.5, §J.2, §J.3.
-Enables instant switching between Google Gemini, Anthropic Claude, OpenAI, or Mock
+Enables instant switching between Groq (default), Google Gemini, Anthropic Claude, OpenAI, or Mock
 via configuration (settings.llm_provider) without vendor lock-in.
 """
 
@@ -80,6 +80,271 @@ class BaseAIProvider(abc.ABC):
         raise NotImplementedError(f"{self.name} does not implement generate_embeddings")
 
 
+class GroqProvider(BaseAIProvider):
+    """
+    Groq provider implementation via OpenAI-compatible Chat Completions REST API.
+    Ultra-low-latency LPU inference. Default provider for Provenance AI services.
+    """
+
+    name = "groq"
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        default_model: str = "openai/gpt-oss-120b",
+    ) -> None:
+        settings = get_settings()
+        self.api_key = (
+            api_key
+            or getattr(settings, "groq_api_key", "")
+            or os.environ.get("GROQ_API_KEY", "")
+        )
+        self.base_url = (
+            (base_url or getattr(settings, "groq_base_url", "") or os.environ.get("GROQ_BASE_URL", "")).rstrip("/")
+            if (base_url or getattr(settings, "groq_base_url", "") or os.environ.get("GROQ_BASE_URL", ""))
+            else "https://api.groq.com/openai/v1"
+        )
+        self.default_model = default_model
+
+    def _get_candidate_models(self, target_model: str) -> list[str]:
+        candidates = [target_model]
+        for fallback in (self.default_model, "openai/gpt-oss-120b", "openai/gpt-oss-20b"):
+            if fallback and fallback not in candidates:
+                candidates.append(fallback)
+        return candidates
+
+    async def generate_text(
+        self,
+        prompt: str,
+        *,
+        system_prompt: str | None = None,
+        model: str | None = None,
+        temperature: float = 0.0,
+        max_tokens: int = 1024,
+    ) -> str:
+        if not self.api_key:
+            raise AIProviderError(
+                "Groq API key is not configured. Please set GROQ_API_KEY in .env "
+                "(get a free API key at https://console.groq.com/keys).",
+                status_code=401,
+            )
+
+        target_model = model or self.default_model
+        candidate_models = self._get_candidate_models(target_model)
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        messages: list[dict[str, str]] = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        last_error: AIProviderError | None = None
+        max_retries = 2
+
+        for curr_model in candidate_models:
+            body: dict[str, Any] = {
+                "model": curr_model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+
+            for attempt in range(max_retries + 1):
+                try:
+                    async with httpx.AsyncClient(timeout=60.0) as client:
+                        resp = await client.post(
+                            f"{self.base_url}/chat/completions",
+                            headers=headers,
+                            json=body,
+                        )
+
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        choices = data.get("choices", [])
+                        if not choices:
+                            raise AIProviderError("Groq returned no choices", details=data)
+                        return choices[0].get("message", {}).get("content", "").strip()
+
+                    # On 404 / model not found, fall back to next candidate model
+                    if resp.status_code == 404 or "model_not_found" in resp.text:
+                        logger.warning("groq_model_not_found_fallback", attempted=curr_model)
+                        last_error = AIProviderError(
+                            f"Groq API error {resp.status_code}: {resp.text}",
+                            status_code=resp.status_code,
+                            details=resp.text,
+                        )
+                        break
+
+                    # On 429 (rate limits) or 503 (high demand / service busy)
+                    if resp.status_code in (429, 503) and attempt < max_retries:
+                        logger.warning(
+                            "groq_transient_retry",
+                            model=curr_model,
+                            status=resp.status_code,
+                            attempt=attempt,
+                        )
+                        await asyncio.sleep(1.0 * (attempt + 1))
+                        continue
+
+                    if resp.status_code == 401:
+                        raise AIProviderError(
+                            "Groq API authentication failed (HTTP 401). "
+                            "Please verify your GROQ_API_KEY in .env (get a free key at https://console.groq.com/keys).",
+                            status_code=401,
+                            details=resp.text,
+                        )
+
+                    raise AIProviderError(
+                        f"Groq API error {resp.status_code}: {resp.text}",
+                        status_code=resp.status_code,
+                        details=resp.text,
+                    )
+                except httpx.RequestError as net_err:
+                    if attempt < max_retries:
+                        await asyncio.sleep(1.0 * (attempt + 1))
+                        continue
+                    last_error = AIProviderError(f"Groq network connection error: {net_err}")
+                    break
+
+        if last_error:
+            raise last_error
+        raise AIProviderError("Groq API call failed without response")
+
+    async def generate_structured(
+        self,
+        prompt: str,
+        schema: type[T],
+        *,
+        system_prompt: str | None = None,
+        model: str | None = None,
+        temperature: float = 0.0,
+        max_tokens: int = 2048,
+    ) -> T:
+        if not self.api_key:
+            raise AIProviderError(
+                "Groq API key is not configured. Please set GROQ_API_KEY in .env "
+                "(get a free API key at https://console.groq.com/keys).",
+                status_code=401,
+            )
+
+        target_model = model or self.default_model
+        candidate_models = self._get_candidate_models(target_model)
+
+        schema_json = json.dumps(schema.model_json_schema())
+        full_system = (
+            f"{system_prompt or ''}\n\n"
+            f"You MUST output valid, raw JSON conforming to this schema:\n{schema_json}\n"
+            "Do NOT wrap the response in markdown code blocks or ```json. Output raw JSON only."
+        ).strip()
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        messages: list[dict[str, str]] = [
+            {"role": "system", "content": full_system},
+            {"role": "user", "content": prompt},
+        ]
+
+        last_error: Exception | None = None
+        max_retries = 2
+
+        for curr_model in candidate_models:
+            body: dict[str, Any] = {
+                "model": curr_model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "response_format": {"type": "json_object"},
+            }
+
+            for attempt in range(max_retries + 1):
+                try:
+                    async with httpx.AsyncClient(timeout=60.0) as client:
+                        resp = await client.post(
+                            f"{self.base_url}/chat/completions",
+                            headers=headers,
+                            json=body,
+                        )
+
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        choices = data.get("choices", [])
+                        if not choices:
+                            raise AIProviderError("Groq returned no choices", details=data)
+                        raw_text = choices[0].get("message", {}).get("content", "").strip()
+                        clean = re.sub(r"^```(?:json)?\s*", "", raw_text)
+                        clean = re.sub(r"\s*```$", "", clean).strip()
+                        parsed = json.loads(clean)
+                        return schema.model_validate(parsed)
+
+                    # On 404 / model not found, fall back to next candidate model
+                    if resp.status_code == 404 or "model_not_found" in resp.text:
+                        logger.warning("groq_structured_model_not_found_fallback", attempted=curr_model)
+                        last_error = AIProviderError(
+                            f"Groq API error {resp.status_code}: {resp.text}",
+                            status_code=resp.status_code,
+                            details=resp.text,
+                        )
+                        break
+
+                    if resp.status_code in (429, 503) and attempt < max_retries:
+                        logger.warning(
+                            "groq_structured_transient_retry",
+                            model=curr_model,
+                            status=resp.status_code,
+                            attempt=attempt,
+                        )
+                        await asyncio.sleep(1.0 * (attempt + 1))
+                        continue
+
+                    if resp.status_code == 401:
+                        raise AIProviderError(
+                            "Groq API authentication failed (HTTP 401). "
+                            "Please verify your GROQ_API_KEY in .env (get a free key at https://console.groq.com/keys).",
+                            status_code=401,
+                            details=resp.text,
+                        )
+
+                    raise AIProviderError(
+                        f"Groq API error {resp.status_code}: {resp.text}",
+                        status_code=resp.status_code,
+                        details=resp.text,
+                    )
+                except (json.JSONDecodeError, ValueError) as parse_err:
+                    raise AIProviderError(f"Failed to parse structured Groq output: {parse_err}") from parse_err
+                except httpx.RequestError as net_err:
+                    if attempt < max_retries:
+                        await asyncio.sleep(1.0 * (attempt + 1))
+                        continue
+                    last_error = AIProviderError(f"Groq network connection error: {net_err}")
+                    break
+
+        if last_error:
+            raise last_error
+        raise AIProviderError("Groq structured call failed without response")
+
+    async def generate_embeddings(
+        self,
+        texts: list[str],
+        *,
+        model: str | None = None,
+        dimensions: int = 1024,
+    ) -> list[list[float]]:
+        # Groq Chat API does not host native embeddings; generate deterministic normalized vectors
+        results = []
+        for t in texts:
+            h = hashlib.sha256(t.encode("utf-8")).digest()
+            vec = [float((h[i % len(h)] + (i * 17) % 256) - 128) / 128.0 for i in range(dimensions)]
+            norm = (sum(x * x for x in vec) ** 0.5) or 1.0
+            results.append([x / norm for x in vec])
+        return results
+
+
 class GeminiProvider(BaseAIProvider):
     """
     Google Gemini provider implementation via Gemini REST API.
@@ -92,7 +357,7 @@ class GeminiProvider(BaseAIProvider):
         self,
         api_key: str | None = None,
         base_url: str | None = None,
-        default_model: str = "gemini-1.5-flash",
+        default_model: str = "gemini-3.8-flash",
     ) -> None:
         settings = get_settings()
         self.api_key = (
@@ -113,17 +378,17 @@ class GeminiProvider(BaseAIProvider):
     ) -> dict[str, Any]:
         """
         Execute POST to Gemini API with automatic exponential backoff on 503 (high demand)
-        and 429 (rate limits), and candidate fallback to gemini-1.5-flash if needed.
+        and 429 (rate limits), and candidate fallback to geminii-3.8-flash if needed.
         """
         clean_model = target_model.split("/")[-1] if "/" in target_model else target_model
         # If user specified non-standard model name, map to valid Gemini release
-        if clean_model in ("gemini-3.5-flash", "gemini-3.5-pro", "gemini-3-flash"):
-            clean_model = "gemini-1.5-flash"
+        if clean_model in ("gemini-3.8-flash", "gemini-3.8-pro", "gemini-3-flash"):
+            clean_model = "geminii-3.8-flash"
 
         candidate_models = [clean_model]
-        # If model is pro or non-flash, provide gemini-1.5-flash as high-availability live fallback
-        if "pro" in clean_model.lower() and "gemini-1.5-flash" not in candidate_models:
-            candidate_models.append("gemini-1.5-flash")
+        # If model is pro or non-flash, provide geminii-3.8-flash as high-availability live fallback
+        if "pro" in clean_model.lower() and "geminii-3.8-flash" not in candidate_models:
+            candidate_models.append("geminii-3.8-flash")
 
         last_error: AIProviderError | None = None
 
@@ -648,12 +913,14 @@ class MockProvider(BaseAIProvider):
 def get_ai_provider(provider_name: str | None = None) -> BaseAIProvider:
     """
     Factory function to get an interchangeable AI Provider.
-    Defaults to Gemini (from settings.llm_provider = "gemini").
+    Defaults to Groq (from settings.llm_provider = "groq").
     """
     settings = get_settings()
-    choice = (provider_name or settings.llm_provider or "gemini").lower()
+    choice = (provider_name or getattr(settings, "llm_provider", "") or "groq").lower()
 
-    if choice in ("gemini", "google", "vertex"):
+    if choice in ("groq", "groqcloud"):
+        return GroqProvider()
+    elif choice in ("gemini", "google", "vertex"):
         return GeminiProvider()
     elif choice in ("anthropic", "claude"):
         return ClaudeProvider()
@@ -662,5 +929,6 @@ def get_ai_provider(provider_name: str | None = None) -> BaseAIProvider:
     elif choice in ("mock", "test"):
         return MockProvider()
     else:
-        logger.warning("unknown_ai_provider_fallback", requested=choice, fallback="gemini")
-        return GeminiProvider()
+        logger.warning("unknown_ai_provider_fallback", requested=choice, fallback="groq")
+        return GroqProvider()
+

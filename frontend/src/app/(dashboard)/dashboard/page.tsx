@@ -15,6 +15,10 @@ import {
   Gauge,
   ShieldAlert,
   Scale,
+  ClipboardList,
+  Clock,
+  TrendingUp,
+  Flame,
 } from "lucide-react";
 import { useUserStore } from "@/lib/store/user-store";
 import { useAppAuth } from "@/lib/auth/clerk-adapter";
@@ -49,6 +53,19 @@ interface SupplierItem {
 interface ReviewItem {
   id: string;
   status: string;
+}
+
+interface MaterialRequestSummaryItem {
+  id: string;
+  status: string;
+  total_estimated_amount?: number | null;
+}
+
+interface AlertCountsData {
+  total: number;
+  critical: number;
+  investigating: number;
+  resolved: number;
 }
 
 interface RiskAssessmentItem {
@@ -93,6 +110,13 @@ export default function DashboardPage(): React.JSX.Element {
 
   const [suppliers, setSuppliers] = useState<SupplierItem[]>([]);
   const [pendingReviews, setPendingReviews] = useState<ReviewItem[]>([]);
+  const [materialRequests, setMaterialRequests] = useState<MaterialRequestSummaryItem[]>([]);
+  const [alertCounts, setAlertCounts] = useState<AlertCountsData>({
+    total: 0,
+    critical: 0,
+    investigating: 0,
+    resolved: 0,
+  });
   const [riskSummary, setRiskSummary] = useState<RiskSummaryData | null>(null);
   const [healthStatus, setHealthStatus] = useState<string>("ok");
   const [isLoading, setIsLoading] = useState(true);
@@ -108,17 +132,25 @@ export default function DashboardPage(): React.JSX.Element {
       if (token) headers["Authorization"] = `Bearer ${token}`;
       if (orgId) headers["x-org-id"] = orgId;
 
-      // 1. Fetch live suppliers
-      const supRes = await fetch("/api/v1/suppliers?limit=100", { headers });
-      if (supRes.ok) {
+      // Fetch all dashboard and analytics data concurrently
+      const [supRes, revRes, hRes, riskRes, mrRes, alertCountsRes] = await Promise.all([
+        fetch("/api/v1/suppliers?limit=100", { headers }).catch(() => null),
+        fetch("/api/v1/entity-reviews?status=pending", { headers }).catch(() => null),
+        fetch("/api/v1/health").catch(() => null),
+        fetch("/api/v1/risks/summary", { headers }).catch(() => null),
+        fetch("/api/v1/material-requests?limit=100", { headers }).catch(() => null),
+        fetch("/api/v1/alerts/counts", { headers }).catch(() => null),
+      ]);
+
+      // 1. Process live suppliers
+      if (supRes && supRes.ok) {
         const supData = await supRes.json();
         setSuppliers(supData.data || []);
       } else {
         setSuppliers([]);
       }
 
-      // 2. Fetch pending entity reviews
-      const revRes = await fetch("/api/v1/entity-reviews?status=pending", { headers }).catch(() => null);
+      // 2. Process pending entity reviews
       if (revRes && revRes.ok) {
         const revData = await revRes.json();
         setPendingReviews(revData.data || []);
@@ -126,20 +158,37 @@ export default function DashboardPage(): React.JSX.Element {
         setPendingReviews([]);
       }
 
-      // 3. Fetch system health
-      const hRes = await fetch("/api/v1/health").catch(() => null);
+      // 3. Process system health
       if (hRes && hRes.ok) {
         const hData = await hRes.json();
         setHealthStatus(hData.status === "ok" ? "Operational" : "Degraded");
       }
 
-      // 4. Fetch live deterministic risk engine summary (Phase 11)
-      const riskRes = await fetch("/api/v1/risks/summary", { headers }).catch(() => null);
+      // 4. Process live deterministic risk engine summary
       if (riskRes && riskRes.ok) {
         const riskData = await riskRes.json();
         setRiskSummary(riskData);
       } else {
         setRiskSummary(null);
+      }
+
+      // 5. Process material requests for procurement analytics
+      if (mrRes && mrRes.ok) {
+        const mrData = await mrRes.json();
+        setMaterialRequests(mrData.items || []);
+      } else {
+        setMaterialRequests([]);
+      }
+
+      // 6. Process alert signal counts
+      if (alertCountsRes && alertCountsRes.ok) {
+        const aData = await alertCountsRes.json();
+        setAlertCounts({
+          total: aData.total ?? 0,
+          critical: aData.critical ?? 0,
+          investigating: aData.investigating ?? 0,
+          resolved: aData.resolved ?? 0,
+        });
       }
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Failed to load dashboard intelligence");
@@ -211,8 +260,48 @@ export default function DashboardPage(): React.JSX.Element {
     };
   }, [suppliers]);
 
+  // Computed Procurement Requisition Metrics
+  const mrMetrics = useMemo(() => {
+    const totalCount = materialRequests.length;
+    const pendingCount = materialRequests.filter((i) => i.status === "pending_approval").length;
+    const approvedCount = materialRequests.filter((i) =>
+      ["approved", "ordered", "partially_ordered"].includes(i.status)
+    ).length;
+    const totalValue = materialRequests.reduce(
+      (sum, i) => sum + (i.total_estimated_amount || 0),
+      0
+    );
+    return { totalCount, pendingCount, approvedCount, totalValue };
+  }, [materialRequests]);
+
   return (
     <div className="space-y-8 animate-in fade-in-50 duration-500 max-w-7xl mx-auto pb-12">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2">
+            <Gauge className="h-6 w-6 text-[#FA651E]" />
+            Enterprise Analytics &amp; Risk Dashboard
+          </h1>
+          <p className="text-xs text-neutral-500 mt-1">
+            Centralized hub for all multi-tier supply chain analytics, procurement spend pipelines, and deterministic risk telemetry.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadDashboardData}
+            disabled={isLoading}
+            className="h-8 text-xs border-neutral-200"
+          >
+            <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", isLoading && "animate-spin")} />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
       {errorMsg && (
         <div className="flex items-center justify-between p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700">
           <div className="flex items-center gap-2">
@@ -228,7 +317,7 @@ export default function DashboardPage(): React.JSX.Element {
         </div>
       )}
 
-      {/* ── KPI Row Computed from Live Database ──────────────────────── */}
+      {/* ── 1. Supplier & Spend Overview KPIs ────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Monitored Suppliers"
@@ -264,7 +353,124 @@ export default function DashboardPage(): React.JSX.Element {
         />
       </div>
 
-      {/* ── Phase 11 Deterministic Risk Engine Telemetry & Factor Breakdown ── */}
+      {/* ── 2. Procurement & Material Requisition Analytics ─────────── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-[#FA651E]" />
+              Procurement &amp; Material Requisition Analytics
+            </h2>
+            <p className="text-[11px] text-neutral-500">
+              Live aggregate metrics across active requisitions, DoA approvals, and spend pipelines.
+            </p>
+          </div>
+          <Button asChild variant="ghost" size="sm" className="h-7 text-xs text-[#FA651E] hover:text-[#E05310]">
+            <Link href="/material-requests">
+              Open Requisitions Queue <ChevronRight className="ml-1 h-3 w-3" />
+            </Link>
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <MetricCard
+            title="Total Requisitions"
+            value={isLoading ? "..." : String(mrMetrics.totalCount)}
+            subtitle="All active requests"
+            icon={<ClipboardList className="h-4 w-4 text-[#FA651E]" />}
+            accent="default"
+            className="rounded-2xl border-neutral-200/80 bg-white shadow-2xs"
+          />
+          <MetricCard
+            title="Pending Approval"
+            value={isLoading ? "..." : String(mrMetrics.pendingCount)}
+            subtitle="Awaiting DoA decision"
+            icon={<Clock className="h-4 w-4 text-amber-500" />}
+            accent="high"
+            className="rounded-2xl border-neutral-200/80 bg-white shadow-2xs"
+          />
+          <MetricCard
+            title="Approved / Ordered"
+            value={isLoading ? "..." : String(mrMetrics.approvedCount)}
+            subtitle="Ready for RFx or PO"
+            icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+            accent="emerald"
+            className="rounded-2xl border-neutral-200/80 bg-white shadow-2xs"
+          />
+          <MetricCard
+            title="Est. Requisition Value"
+            value={
+              isLoading
+                ? "..."
+                : `$${mrMetrics.totalValue.toLocaleString(undefined, {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}`
+            }
+            subtitle="Aggregate requisition spend"
+            icon={<TrendingUp className="h-4 w-4 text-blue-500" />}
+            accent="blue"
+            className="rounded-2xl border-neutral-200/80 bg-white shadow-2xs"
+          />
+        </div>
+      </div>
+
+      {/* ── 3. Regulatory Signals & Disruption Alert Analytics ──────── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-rose-500" />
+              Disruption Signals &amp; Alert Telemetry
+            </h2>
+            <p className="text-[11px] text-neutral-500">
+              Live status breakdown of multi-tier regulatory and geopolitical exposure signals.
+            </p>
+          </div>
+          <Button asChild variant="ghost" size="sm" className="h-7 text-xs text-[#FA651E] hover:text-[#E05310]">
+            <Link href="/alerts">
+              View All Alerts <ChevronRight className="ml-1 h-3 w-3" />
+            </Link>
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <MetricCard
+            title="Total Monitored Signals"
+            value={isLoading ? "..." : String(alertCounts.total)}
+            subtitle="Active regulatory notices"
+            icon={<AlertTriangle className="h-4 w-4 text-[#FA651E]" />}
+            accent="default"
+            className="rounded-2xl border-neutral-200/80 bg-white shadow-2xs"
+          />
+          <MetricCard
+            title="Critical Shocks"
+            value={isLoading ? "..." : String(alertCounts.critical)}
+            subtitle="Immediate operational impact"
+            icon={<Flame className="h-4 w-4 text-rose-500" />}
+            accent="critical"
+            className="rounded-2xl border-neutral-200/80 bg-white shadow-2xs"
+          />
+          <MetricCard
+            title="In Investigation"
+            value={isLoading ? "..." : String(alertCounts.investigating)}
+            subtitle="Active root-cause triage"
+            icon={<Activity className="h-4 w-4 text-amber-500" />}
+            accent="high"
+            className="rounded-2xl border-neutral-200/80 bg-white shadow-2xs"
+          />
+          <MetricCard
+            title="Resolved Signals"
+            value={isLoading ? "..." : String(alertCounts.resolved)}
+            subtitle="Mitigations applied & verified"
+            icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+            accent="emerald"
+            className="rounded-2xl border-neutral-200/80 bg-white shadow-2xs"
+          />
+        </div>
+      </div>
+
+      {/* ── 4. Deterministic Risk Engine Telemetry ───────────────────── */}
       <Card className="rounded-2xl border-neutral-200/80 bg-white shadow-2xs">
         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-neutral-100 gap-3">
           <div>
@@ -408,7 +614,7 @@ export default function DashboardPage(): React.JSX.Element {
         </CardContent>
       </Card>
 
-      {/* ── High Exposure Critical Suppliers from Live Database ───────── */}
+      {/* ── 5. High Exposure Critical Suppliers from Live Database ────── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Suppliers with Highest Risk Exposure */}
         <Card className="lg:col-span-2 rounded-2xl border-neutral-200/80 bg-white shadow-2xs">

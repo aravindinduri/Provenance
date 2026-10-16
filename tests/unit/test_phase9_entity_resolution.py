@@ -54,6 +54,7 @@ from app.modules.ai.provider import (
     BaseAIProvider,
     ClaudeProvider,
     GeminiProvider,
+    GroqProvider,
     MockProvider,
     OpenAIProvider,
     get_ai_provider,
@@ -290,19 +291,22 @@ def test_stage0_domain_normalization_and_free_mail_blocking():
     assert is_free_mail_domain("siemens.com") is False
 
 
-# ── 2. AI Provider Interchangeability (Gemini Default, Zero Vendor Lock-in) ──
+# ── 2. AI Provider Interchangeability (Groq Default, Zero Vendor Lock-in) ──
 
-def test_ai_provider_factory_defaults_to_gemini():
-    """The default AI provider must be Google Gemini per architectural requirements."""
+def test_ai_provider_factory_defaults_to_groq():
+    """The default AI provider must be Groq per configuration requirements."""
     settings = get_settings()
-    assert settings.llm_provider == "gemini"
+    assert settings.llm_provider == "groq"
     provider = get_ai_provider()
-    assert isinstance(provider, GeminiProvider)
-    assert provider.name == "gemini"
+    assert isinstance(provider, GroqProvider)
+    assert provider.name == "groq"
 
 
 def test_ai_provider_factory_interchangeable():
-    """AI services must be easily interchangeable between Gemini, Claude, OpenAI, and Mock."""
+    """AI services must be easily interchangeable between Groq, Gemini, Claude, OpenAI, and Mock."""
+    p_groq = get_ai_provider("groq")
+    assert isinstance(p_groq, GroqProvider)
+
     p_gemini = get_ai_provider("gemini")
     assert isinstance(p_gemini, GeminiProvider)
 

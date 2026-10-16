@@ -54,7 +54,9 @@ class Settings(BaseSettings):
     auth_audience: str = ""
 
     # ── LLM ──────────────────────────────────────────────────────────────────
-    llm_provider: str = ""
+    llm_provider: str = "groq"
+    groq_api_key: str = ""
+    groq_base_url: str = "https://api.groq.com/openai/v1"
     gemini_api_key: str = ""
     google_api_key: str = ""
     gemini_base_url: str = ""

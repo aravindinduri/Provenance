@@ -13,8 +13,10 @@ import { IntegrationsSection } from "./IntegrationsSection";
 import { FinalCTASection } from "./FinalCTASection";
 import { Footer } from "./Footer";
 import { AgentDemoModal } from "./AgentDemoModal";
+import { ScrollAnimationProvider } from "./ScrollAnimationProvider";
 
-export function LandingPageClient() {
+// LandingPageClient - Agentic Procurement & Risk Analysis Platform
+export function LandingPageClient(): React.ReactElement {
   const [demoDomain, setDemoDomain] = useState("yourcompany.com");
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
 
@@ -24,49 +26,51 @@ export function LandingPageClient() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-[#0A0A0A] font-sans selection:bg-[#FA651E]/20 selection:text-[#FA651E] antialiased">
-      {/* Navigation */}
-      <Navbar />
+    <ScrollAnimationProvider>
+      <div className="min-h-screen bg-[#FAF9F6] text-[#0A0A0A] font-sans selection:bg-[#FA651E]/20 selection:text-[#FA651E] antialiased">
+        {/* Navigation */}
+        <Navbar />
 
-      {/* Main Content Sections */}
-      <main>
-        {/* 1. Hero Section */}
-        <HeroSection onLaunchDemo={handleLaunchDemo} />
+        {/* Main Content Sections with GSAP ScrollTrigger Animations */}
+        <main>
+          {/* 1. Hero Section: Autonomous S2P Copilot + Deterministic Math */}
+          <HeroSection onLaunchDemo={handleLaunchDemo} />
 
-        {/* 2. Customer Trust Logo Bar */}
-        <TrustBar />
+          {/* 2. Customer Trust Logo Bar */}
+          <TrustBar />
 
-        {/* 3. 4-Stage Product Showcase */}
-        <ShowcaseSection onLaunchDemo={() => handleLaunchDemo("provenance.io")} />
+          {/* 3. 4-Stage Product Showcase: Material Requisitions to Cited Approvals */}
+          <ShowcaseSection onLaunchDemo={() => handleLaunchDemo("provenance.io")} />
 
-        {/* 4. 3-Step Setup Walkthrough */}
-        <SetupWalkthroughSection />
+          {/* 4. 3-Step Setup Walkthrough: Data Ingest to Active Defense */}
+          <SetupWalkthroughSection />
 
-        {/* 5. Capability Bento Grid */}
-        <OutreachBentoGrid />
+          {/* 5. Capability Bento Grid: Agent Trace, Deterministic Math, Topology */}
+          <OutreachBentoGrid />
 
-        {/* 6. Unified-Agent Venn Diagram Stack Replacement */}
-        <VennSection />
+          {/* 6. Unified Venn Diagram: S2P Core + Risk Integration */}
+          <VennSection />
 
-        {/* 7. Metrics & Testimonials */}
-        <MetricsAndTestimonials />
+          {/* 7. Enterprise Metrics & Testimonials */}
+          <MetricsAndTestimonials />
 
-        {/* 8. Integrations Hub */}
-        <IntegrationsSection />
+          {/* 8. Integrations Hub: ERPs, P2P, Legal Gazettes */}
+          <IntegrationsSection />
 
-        {/* 10. Final Call-To-Action Banner */}
-        <FinalCTASection onLaunchDemo={handleLaunchDemo} />
-      </main>
+          {/* 9. Final Call-To-Action Banner */}
+          <FinalCTASection onLaunchDemo={handleLaunchDemo} />
+        </main>
 
-      {/* Footer */}
-      <Footer />
+        {/* Footer */}
+        <Footer />
 
-      {/* Interactive Website Scanner / AI Agent Launcher Modal */}
-      <AgentDemoModal
-        isOpen={isDemoModalOpen}
-        onClose={() => setIsDemoModalOpen(false)}
-        domain={demoDomain}
-      />
-    </div>
+        {/* Interactive Domain / Supplier Entity Scanner Modal */}
+        <AgentDemoModal
+          isOpen={isDemoModalOpen}
+          onClose={() => setIsDemoModalOpen(false)}
+          domain={demoDomain}
+        />
+      </div>
+    </ScrollAnimationProvider>
   );
 }

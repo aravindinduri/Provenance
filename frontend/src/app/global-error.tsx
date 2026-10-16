@@ -1,6 +1,5 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 import { AlertOctagon, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,10 +12,10 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    try {
-      Sentry.captureException(error);
-    } catch {
-      // Local dev fallback
+    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      import("@sentry/nextjs")
+        .then((Sentry) => Sentry.captureException(error))
+        .catch(() => {});
     }
     console.error("Global root error caught:", error);
   }, [error]);

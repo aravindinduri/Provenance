@@ -17,6 +17,7 @@ import {
   Network,
   ArrowUp,
   User,
+  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +41,19 @@ import { useConversationStore } from "@/lib/store/conversation-store";
 
 export interface InvestigationCitation {
   id: string;
-  citation_type: "supplier" | "company" | "event" | "graph_edge" | "document";
+  citation_type:
+  | "supplier"
+  | "company"
+  | "event"
+  | "graph_edge"
+  | "document"
+  | "material_request"
+  | "item"
+  | "approval"
+  | "invoice"
+  | "goods_receipt"
+  | "purchase_order"
+  | "rfx";
   title: string;
   details: string;
   country?: string | null;
@@ -60,7 +73,25 @@ export interface InvestigationTraceStep {
 
 export interface TraceRecord {
   id: string;
-  action_type: "query" | "add_supplier" | "analyze_company" | "fetch_events" | "recompute_risk" | "get_and_fetch";
+  action_type:
+  | "query"
+  | "add_supplier"
+  | "analyze_company"
+  | "fetch_events"
+  | "recompute_risk"
+  | "get_and_fetch"
+  | "create_material_request"
+  | "create_rfq"
+  | "compare_quotations"
+  | "create_purchase_order"
+  | "record_receipt"
+  | "process_invoice"
+  | "match_invoice"
+  | "approve_document"
+  | "analyze_spend"
+  | "check_contract"
+  | "supplier_scorecard"
+  | "generate_report";
   title: string;
   summary: string;
   details?: string;
@@ -93,7 +124,7 @@ export interface SuggestionItem {
   id: string;
   title: string;
   prompt: string;
-  category: "greeting" | "action" | "exposure" | "disruption";
+  category: "greeting" | "action" | "exposure" | "disruption" | "procurement";
   icon: string;
   description: string;
 }
@@ -109,6 +140,14 @@ const DEFAULT_SUGGESTIONS: SuggestionItem[] = [
   },
   {
     id: "sug-2",
+    title: "Create Material Request",
+    prompt: "Create material request for 500 units of raw steel supplies",
+    category: "procurement",
+    icon: "ClipboardList",
+    description: "Requisition materials & route for approval",
+  },
+  {
+    id: "sug-3",
     title: "Add a Supplier",
     prompt: "Add a supplier Taiwan Semiconductor (TSMC) in TW with tier 1 and spend $15M",
     category: "action",
@@ -116,7 +155,7 @@ const DEFAULT_SUGGESTIONS: SuggestionItem[] = [
     description: "Enroll and resolve a vendor node in graph",
   },
   {
-    id: "sug-3",
+    id: "sug-4",
     title: "Analyze Company Risk",
     prompt: "Perform analyses on the data of the company Cotiviti",
     category: "exposure",
@@ -124,12 +163,36 @@ const DEFAULT_SUGGESTIONS: SuggestionItem[] = [
     description: "Run deterministic risk calculation & synthesis",
   },
   {
-    id: "sug-4",
-    title: "Get & Fetch Live Feeds",
-    prompt: "Get and fetch live regulatory disruption events and supplier catalog telemetry",
-    category: "disruption",
-    icon: "RefreshCw",
-    description: "Sync live regulatory signals and catalog state",
+    id: "sug-5",
+    title: "Approve Requisition",
+    prompt: "Approve pending material request under DoA threshold",
+    category: "procurement",
+    icon: "ShieldCheck",
+    description: "Execute delegation of authority decision",
+  },
+  {
+    id: "sug-6",
+    title: "Create Purchase Order",
+    prompt: "Issue purchase order for 500 units of raw steel supplies to Jindal Stainless Ltd.",
+    category: "procurement",
+    icon: "ShoppingCart",
+    description: "Generate binding PO and route for approval",
+  },
+  {
+    id: "sug-7",
+    title: "Record Goods Receipt",
+    prompt: "Record goods receipt note for the latest purchase order",
+    category: "procurement",
+    icon: "PackageCheck",
+    description: "Inspect and confirm intake delivery on dock",
+  },
+  {
+    id: "sug-8",
+    title: "Run 3-Way Match",
+    prompt: "Run 3-way match for the latest supplier invoice against purchase order and goods receipt",
+    category: "procurement",
+    icon: "Receipt",
+    description: "Verify price and quantity tolerances deterministically",
   },
 ];
 
@@ -229,14 +292,12 @@ export function AgentTraceWorkspace(): React.JSX.Element {
           country: s.company.country,
         }));
         setCompanyList(mapped);
-        if (mapped.length > 0 && !selectedCompanyId) {
-          setSelectedCompanyId(mapped[0].id);
-        }
+        setSelectedCompanyId((prev) => prev || (mapped.length > 0 ? mapped[0].id : ""));
       }
     } catch {
       // Ignore background load error
     }
-  }, [orgId, getToken, selectedCompanyId]);
+  }, [orgId, getToken]);
 
   useEffect(() => {
     loadSuppliersForSelector();
@@ -887,9 +948,6 @@ export function AgentTraceWorkspace(): React.JSX.Element {
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-neutral-500">
-              Autonomous Supply Chain Copilot
-            </p>
           </div>
         </div>
 
@@ -1133,7 +1191,17 @@ export function AgentTraceWorkspace(): React.JSX.Element {
                                       {Math.round(c.confidence * 100)}%
                                     </span>
                                   </div>
-                                  <div className="font-bold text-neutral-900">{c.title}</div>
+                                  {c.url ? (
+                                    <Link
+                                      href={c.url}
+                                      className="font-bold text-neutral-900 hover:text-[#FA651E] hover:underline flex items-center justify-between"
+                                    >
+                                      <span>{c.title}</span>
+                                      <span className="text-[10px] text-[#FA651E] font-normal">View &rarr;</span>
+                                    </Link>
+                                  ) : (
+                                    <div className="font-bold text-neutral-900">{c.title}</div>
+                                  )}
                                   <p className="text-neutral-600 text-[11px] line-clamp-2">{c.details}</p>
                                 </div>
                               ))}

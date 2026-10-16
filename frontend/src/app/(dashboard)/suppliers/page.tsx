@@ -400,11 +400,6 @@ export default function SuppliersPage() {
               <Sparkles className="h-3.5 w-3.5 text-primary" /> Review Queue
             </Link>
           </Button>
-          <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
-            <Link href="/onboarding">
-              <Layers className="h-3.5 w-3.5 text-primary" /> Onboarding Wizard
-            </Link>
-          </Button>
           <Button variant="outline" size="sm" onClick={() => setIsBulkModalOpen(true)} className="gap-1.5 text-xs">
             <Upload className="h-3.5 w-3.5" /> Bulk CSV Import
           </Button>
@@ -421,48 +416,8 @@ export default function SuppliersPage() {
         </div>
       )}
 
-      {/* KPI Overview Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="glass-panel border-border/70 p-4">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-medium">
-            <span>Direct Suppliers</span>
-            <Building2 className="h-4 w-4 text-primary" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-foreground">{metrics.total}</div>
-          <span className="text-[11px] text-muted-foreground">Active graph nodes</span>
-        </Card>
-
-        <Card className="glass-panel border-border/70 p-4">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-medium">
-            <span>High Risk Criticality</span>
-            <ShieldAlert className="h-4 w-4 text-amber-500" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-amber-400">{metrics.highCrit}</div>
-          <span className="text-[11px] text-muted-foreground">Criticality Level 4 & 5</span>
-        </Card>
-
-        <Card className="glass-panel border-border/70 p-4">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-medium">
-            <span>Tracked Annual Spend</span>
-            <DollarSign className="h-4 w-4 text-emerald-400" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-foreground">
-            ${(metrics.totalSpend / 1000000).toFixed(1)}M
-          </div>
-          <span className="text-[11px] text-muted-foreground">USD exposure base</span>
-        </Card>
-
-        <Card className="glass-panel border-border/70 p-4">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-medium">
-            <span>Single Source Nodes</span>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-foreground">{metrics.singleSourceCount}</div>
-          <span className="text-[11px] text-muted-foreground">Sole-source dependencies</span>
-        </Card>
-      </div>
-
       {/* Filter and Search Toolbar */}
+
       <Card className="glass-panel border-border/70 p-3.5">
         <div className="flex flex-col md:flex-row md:items-center gap-3">
           <div className="relative flex-1">
@@ -564,14 +519,14 @@ export default function SuppliersPage() {
                     <Building2 className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
                     <p className="font-semibold text-foreground">No suppliers found</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Seed your direct supply base via CSV or using the Onboarding Wizard.
+                      Seed your direct supply base via CSV or add suppliers manually.
                     </p>
                     <div className="mt-4 flex justify-center gap-2">
-                      <Button size="sm" variant="outline" asChild>
-                        <Link href="/onboarding">Launch Onboarding Wizard</Link>
+                      <Button size="sm" variant="outline" onClick={() => setIsAddModalOpen(true)}>
+                        <Plus className="h-3.5 w-3.5 mr-1" /> Add Supplier
                       </Button>
                       <Button size="sm" onClick={() => setIsBulkModalOpen(true)}>
-                        Import CSV
+                        <Upload className="h-3.5 w-3.5 mr-1" /> Import CSV
                       </Button>
                     </div>
                   </td>
@@ -634,7 +589,7 @@ export default function SuppliersPage() {
                     </td>
 
                     <td className="py-3 px-4 font-mono font-medium text-foreground">
-                      ${((sup.annual_spend_usd || 0)).toLocaleString()}
+                      {`$${(sup.annual_spend_usd || 0).toLocaleString()}`}
                     </td>
 
                     <td className="py-3 px-4">

@@ -20,8 +20,8 @@ const AuthContext = createContext<AuthContextType>({
   userId: null,
   userEmail: null,
   getToken: async () => null,
-  setAuthSession: () => {},
-  signOut: async () => {},
+  setAuthSession: () => { },
+  signOut: async () => { },
 });
 
 const TOKEN_KEY = "provenance_token";
@@ -142,13 +142,28 @@ export function useAppAuth(): {
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const clerkAuth = useClerkAuth();
+
+  // If user signed in natively with platform credentials, use native session
+  if (nativeAuth.isSignedIn) {
+    return {
+      isSignedIn: true,
+      userId: nativeAuth.userId,
+      userEmail: nativeAuth.userEmail,
+      getToken: nativeAuth.getToken,
+      setAuthSession: nativeAuth.setAuthSession,
+      signOut: nativeAuth.signOut,
+    };
+  }
+
   return {
     isSignedIn: !!clerkAuth.isSignedIn,
     userId: clerkAuth.userId ?? null,
     userEmail: null,
     getToken: clerkAuth.getToken,
-    setAuthSession: () => {},
-    signOut: async () => {},
+    setAuthSession: nativeAuth.setAuthSession,
+    signOut: async (opts) => {
+      await nativeAuth.signOut(opts);
+    },
   };
 }
 

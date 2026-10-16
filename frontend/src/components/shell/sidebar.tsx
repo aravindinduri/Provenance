@@ -5,20 +5,24 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Gauge,
-  Compass,
   Network,
   Sparkles,
   Building2,
   AlertTriangle,
-  Settings,
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
   Bell,
-  ChevronDown,
   MessageSquare,
   Plus,
   Trash2,
+  ClipboardList,
+  Package,
+  FileQuestion,
+  FileText,
+  ShoppingCart,
+  PackageCheck,
+  Receipt,
 } from "lucide-react";
 import { useUIStore } from "@/lib/store/ui-store";
 import { useUserStore } from "@/lib/store/user-store";
@@ -44,11 +48,9 @@ export function Sidebar() {
   const isCollapsed = useUIStore((s) => s.isSidebarCollapsed);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const isPlatformAdmin = useUserStore((s) => s.isPlatformAdmin);
-  const isOnboarded = useUserStore((s) => s.isOnboarded);
   const orgId = useUserStore((s) => s.orgId);
   const { getToken } = useAppAuth();
   const [activeAlertsCount, setActiveAlertsCount] = useState<number | null>(null);
-  const [settingsExpanded, setSettingsExpanded] = useState(false);
 
   const conversations = useConversationStore((s) => s.conversations);
   const activeConversationId = useConversationStore((s) => s.activeConversationId);
@@ -59,7 +61,6 @@ export function Sidebar() {
   React.useEffect(() => {
     let isMounted = true;
     async function fetchCounts() {
-      if (!orgId) return;
       try {
         const token = await getToken();
         const headers: Record<string, string> = {};
@@ -79,7 +80,7 @@ export function Sidebar() {
     return () => {
       isMounted = false;
     };
-  }, [orgId, getToken, pathname]);
+  }, [orgId, getToken]);
 
   const navItems: NavItem[] = [
     {
@@ -95,11 +96,49 @@ export function Sidebar() {
       icon: Gauge,
     },
     {
-      title: "Onboarding",
-      href: "/onboarding",
-      icon: Compass,
-      badge: !isOnboarded ? "Setup" : undefined,
-      badgeVariant: "high",
+      title: "Material Request",
+      href: "/material-requests",
+      icon: ClipboardList,
+    },
+    {
+      title: "RFQ / RFP",
+      href: "/rfx",
+      icon: FileQuestion,
+    },
+    {
+      title: "Quotations",
+      href: "/quotations",
+      icon: FileText,
+    },
+    {
+      title: "Purchase Order",
+      href: "/purchase-orders",
+      icon: ShoppingCart,
+    },
+    {
+      title: "Purchase Receipt",
+      href: "/receipts",
+      icon: PackageCheck,
+    },
+    {
+      title: "Purchase Invoice",
+      href: "/invoices",
+      icon: Receipt,
+    },
+    {
+      title: "Approvals",
+      href: "/approvals",
+      icon: ShieldCheck,
+    },
+    {
+      title: "Items",
+      href: "/items",
+      icon: Package,
+    },
+    {
+      title: "Suppliers",
+      href: "/suppliers",
+      icon: Building2,
     },
     {
       title: "Alerts",
@@ -107,11 +146,6 @@ export function Sidebar() {
       icon: AlertTriangle,
       badge: activeAlertsCount && activeAlertsCount > 0 ? activeAlertsCount : undefined,
       badgeVariant: "critical",
-    },
-    {
-      title: "Suppliers",
-      href: "/suppliers",
-      icon: Building2,
     },
     {
       title: "Graph",
@@ -131,7 +165,7 @@ export function Sidebar() {
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-100 px-3.5">
         {!isCollapsed ? (
           <>
-            <Link href="/dashboard" className="flex items-center gap-2 pl-1 group">
+            <Link href="/dashboard" prefetch={false} className="flex items-center gap-2 pl-1 group">
               <ProvenanceLogo size="sm" inverted={false} withTagline={false} />
               <span className="text-xs font-extrabold tracking-wider text-neutral-900 font-mono">
                 PROVENANCE
@@ -141,6 +175,7 @@ export function Sidebar() {
               {/* Notification Bell */}
               <Link
                 href="/alerts"
+                prefetch={false}
                 className="relative p-1.5 text-neutral-500 hover:text-neutral-900 rounded-lg hover:bg-neutral-100 transition-colors"
                 title="Active Alerts"
               >
@@ -181,6 +216,7 @@ export function Sidebar() {
             <React.Fragment key={item.href}>
               <Link
                 href={item.href}
+                prefetch={false}
                 className={cn(
                   "group flex items-center gap-3 rounded-xl px-3 py-2 text-xs transition-all duration-150",
                   isActive
@@ -300,59 +336,6 @@ export function Sidebar() {
           );
         })}
 
-        {/* Collapsible Settings Group (Gojiberry Style) */}
-        {!isCollapsed ? (
-          <div className="pt-1">
-            <button
-              onClick={() => setSettingsExpanded(!settingsExpanded)}
-              className={cn(
-                "w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition-all duration-150 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-950",
-                pathname.startsWith("/settings") && "text-neutral-950 font-semibold"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <Settings className="h-4 w-4 text-neutral-500" />
-                <span>Settings</span>
-              </div>
-              <ChevronDown
-                className={cn(
-                  "h-3.5 w-3.5 text-neutral-400 transition-transform duration-200",
-                  settingsExpanded && "rotate-180"
-                )}
-              />
-            </button>
-
-            {settingsExpanded && (
-              <div className="pl-9 pr-2 py-1 space-y-1 animate-in fade-in duration-200">
-                <Link
-                  href="/settings"
-                  className={cn(
-                    "block py-1.5 px-2 text-[11px] rounded-lg transition-colors",
-                    pathname === "/settings"
-                      ? "text-[#FA651E] font-semibold bg-orange-50/50"
-                      : "text-neutral-500 hover:text-neutral-900"
-                  )}
-                >
-                  Account &amp; Organization
-                </Link>
-                <Link
-                  href="/settings#integrations"
-                  className="block py-1.5 px-2 text-[11px] text-neutral-500 hover:text-neutral-900 rounded-lg transition-colors"
-                >
-                  ERP &amp; API Integrations
-                </Link>
-              </div>
-            )}
-          </div>
-        ) : (
-          <Link
-            href="/settings"
-            className="flex items-center justify-center p-2 rounded-xl text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
-            title="Settings"
-          >
-            <Settings className="h-4 w-4" />
-          </Link>
-        )}
 
         {/* Platform Admin */}
         {isPlatformAdmin && (

@@ -87,4 +87,12 @@ CELERYBEAT_SCHEDULE: dict = {
         "args": ["cbic_html"],
         "options": {"queue": "ingest_html"},
     },
+    # ── Phase 4 Procurement Automated Tasks ───────────────────────────────────
+    # Auto-match invoices against POs and Goods Receipts every 5 minutes
+    "procurement-auto-match-invoices": {
+        "task": "workers.tasks.procurement.auto_match_invoices",
+        "schedule": 300.0,  # 5 min
+        "args": [],
+        "options": {"queue": "ingest"},
+    },
 }

@@ -158,12 +158,68 @@ class PurchaseOrder(AuditMixin, SoftDeleteMixin, Base):
     )
     order_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     total_amount: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
-    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
-    line_items: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True, server_default="USD")
+    line_items: Mapped[list[dict] | dict | None] = mapped_column(
+        JSONB, nullable=True, server_default=text("'[]'::jsonb")
+    )
     source_document_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("uploaded_documents.id", ondelete="SET NULL"),
         nullable=True,
+    )
+
+    # ── Phase 3 Lifecycle Fields ──────────────────────────────────────────────
+    status: Mapped[str] = mapped_column(
+        String(30), nullable=False, server_default="draft", index=True
+    )
+    approved_by: Mapped[str | None] = mapped_column(String, nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    acknowledged_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    expected_delivery_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    delivery_address: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    payment_terms: Mapped[str | None] = mapped_column(Text, nullable=True)
+    delivery_terms: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    material_request_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("material_requests.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    rfx_event_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("rfx_events.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    rfx_response_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("rfx_responses.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    company = relationship("Company", foreign_keys=[company_id], lazy="joined")
+    material_request = relationship(
+        "MaterialRequest", foreign_keys=[material_request_id], lazy="selectin"
+    )
+    rfx_event = relationship("RFxEvent", foreign_keys=[rfx_event_id], lazy="selectin")
+    rfx_response = relationship(
+        "RFxResponse", foreign_keys=[rfx_response_id], lazy="selectin"
+    )
+    receipts = relationship(
+        "GoodsReceipt",
+        back_populates="purchase_order",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
 
@@ -217,6 +273,41 @@ class SpendRecord(AuditMixin, SoftDeleteMixin, Base):
         ForeignKey("uploaded_documents.id", ondelete="SET NULL"),
         nullable=True,
     )
+
+    # ── Phase 4 Invoice & 3-Way Matching Fields ──────────────────────────────
+    invoice_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    payment_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="unpaid", index=True
+    )  # unpaid | partially_paid | paid | overdue | disputed
+    match_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="unmatched", index=True
+    )  # unmatched | matched_2way | matched_3way | exception
+    match_exceptions: Mapped[list[dict] | dict | None] = mapped_column(
+        JSONB, nullable=True, server_default=text("'[]'::jsonb")
+    )
+    goods_receipt_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("goods_receipts.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    approved_by: Mapped[str | None] = mapped_column(String, nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    paid_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    line_items: Mapped[list[dict] | dict | None] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    company = relationship("Company", foreign_keys=[company_id], lazy="joined")
+    purchase_order = relationship("PurchaseOrder", foreign_keys=[po_id], lazy="joined")
+    goods_receipt = relationship("GoodsReceipt", foreign_keys=[goods_receipt_id], lazy="selectin")
+
 
 
 class SpendLeakageFinding(AuditMixin, Base):

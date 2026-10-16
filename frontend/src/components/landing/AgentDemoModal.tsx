@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { CornerMarks } from "./CornerMarks";
-import { CheckCircle2, X, ArrowRight, ShieldCheck, Network, Database, Scale, AlertTriangle } from "lucide-react";
+import { CheckCircle2, X, ArrowRight, ShieldCheck, Network, Database, Scale } from "lucide-react";
 import Link from "next/link";
 
 interface AgentDemoModalProps {
@@ -11,7 +11,7 @@ interface AgentDemoModalProps {
   domain: string;
 }
 
-export function AgentDemoModal({ isOpen, onClose, domain }: AgentDemoModalProps) {
+export function AgentDemoModal({ isOpen, onClose, domain }: AgentDemoModalProps): React.ReactElement | null {
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(15);
   const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/.*$/, "") || "supplier-entity.com";

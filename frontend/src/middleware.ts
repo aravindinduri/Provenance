@@ -2,12 +2,12 @@ import { NextResponse, type NextRequest, type NextFetchEvent } from "next/server
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { isClerkConfigured } from "@/lib/auth/clerk-config";
 
-// Routes that do NOT require authentication
+// Routes that do NOT require authentication at the Next.js edge
 const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
-  "/api/v1/health(.*)",
+  "/api/(.*)",
 ]);
 
 const clerkHandler = clerkMiddleware(async (auth, request) => {
@@ -18,6 +18,9 @@ const clerkHandler = clerkMiddleware(async (auth, request) => {
 
 export default function middleware(request: NextRequest, event: NextFetchEvent) {
   if (!isClerkConfigured()) {
+    return NextResponse.next();
+  }
+  if (isPublicRoute(request)) {
     return NextResponse.next();
   }
   return clerkHandler(request, event);

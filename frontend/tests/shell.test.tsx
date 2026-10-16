@@ -15,6 +15,11 @@ vi.mock("@clerk/nextjs", () => ({
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard",
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }));
 
 describe("App Shell & Navigation", () => {
@@ -40,9 +45,9 @@ describe("App Shell & Navigation", () => {
       expect(screen.getByText("Alerts")).toBeInTheDocument();
       expect(screen.getByText("Suppliers")).toBeInTheDocument();
       expect(screen.getByText("Graph")).toBeInTheDocument();
-      expect(screen.getByText("Investigate")).toBeInTheDocument();
-      expect(screen.getByText("Data")).toBeInTheDocument();
-      expect(screen.getByText("Settings")).toBeInTheDocument();
+      expect(screen.getByText("Trace")).toBeInTheDocument();
+      expect(screen.getByText("Purchase Order")).toBeInTheDocument();
+      expect(screen.getByText("Purchase Receipt")).toBeInTheDocument();
     });
 
     it("hides platform admin link for regular org admins", () => {

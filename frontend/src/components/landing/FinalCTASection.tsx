@@ -2,13 +2,13 @@
 
 import React, { useState } from "react";
 import { CornerMarks } from "./CornerMarks";
-import { Search, ArrowRight, ShieldCheck } from "lucide-react";
+import { Search, ArrowRight, Sparkles } from "lucide-react";
 
 interface FinalCTASectionProps {
   onLaunchDemo: (domain: string) => void;
 }
 
-export function FinalCTASection({ onLaunchDemo }: FinalCTASectionProps) {
+export function FinalCTASection({ onLaunchDemo }: FinalCTASectionProps): React.ReactElement {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
 
@@ -25,11 +25,16 @@ export function FinalCTASection({ onLaunchDemo }: FinalCTASectionProps) {
   return (
     <section id="demo" className="py-24 bg-[#FAF9F6] relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative rounded-3xl bg-white border border-neutral-200/80 p-8 sm:p-16 lg:p-20 shadow-[0_16px_50px_rgba(250,101,30,0.06)] overflow-hidden text-center">
+        <div
+          data-reveal
+          className="relative rounded-3xl bg-white border border-neutral-200/80 p-8 sm:p-16 lg:p-20 shadow-[0_16px_50px_rgba(250,101,30,0.06)] overflow-hidden text-center"
+        >
           <CornerMarks size={12} color="#FA651E" thickness={1.5} offset={-6} />
 
-          {/* Warm Ambient Radial Glow */}
+          {/* Warm Ambient Radial Glow with Parallax Float */}
           <div
+            data-parallax-float
+            data-parallax-speed="0.2"
             className="pointer-events-none absolute inset-0 opacity-70"
             style={{
               background:
@@ -51,16 +56,21 @@ export function FinalCTASection({ onLaunchDemo }: FinalCTASectionProps) {
           </svg>
 
           <div className="relative z-10 max-w-3xl mx-auto">
+            {/* Status Chip */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#FA651E] text-xs font-mono font-semibold mb-6">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AGENTIC PROCUREMENT &amp; RISK COMMAND CENTER</span>
+            </div>
 
             {/* Headline */}
             <h2 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#0A0A0A] leading-tight mb-4">
-              Protect your supply chain <br className="hidden sm:inline" />
+              Unify your procurement workflow <br className="hidden sm:inline" />
               before the <span className="text-[#FA651E]">next global shock</span>.
             </h2>
 
             {/* Subhead */}
             <p className="text-base sm:text-lg text-neutral-600 mb-10 font-normal">
-              Enter any supplier name or domain to simulate multi-tier exposure, identify single-source choke points, and inspect cited regulatory evidence.
+              Enter any supplier, part code, or domain to simulate multi-tier exposure, identify single-source choke points, and test Agent Trace autonomous orchestration.
             </p>
 
             {/* Interactive Domain Input */}
@@ -80,7 +90,7 @@ export function FinalCTASection({ onLaunchDemo }: FinalCTASectionProps) {
                       setUrl(e.target.value);
                       if (error) setError("");
                     }}
-                    placeholder="Enter supplier domain or name (e.g. tsmc.com, basf.com)"
+                    placeholder="Enter supplier domain or part name (e.g. tsmc.com, basf.com)"
                     className="w-full bg-transparent text-sm sm:text-base text-neutral-900 placeholder-neutral-400 focus:outline-none"
                     aria-label="Enter supplier name or domain"
                   />
@@ -90,7 +100,8 @@ export function FinalCTASection({ onLaunchDemo }: FinalCTASectionProps) {
                   type="submit"
                   className="w-full sm:w-auto px-6 py-3 bg-[#0A0A0A] hover:bg-neutral-800 text-white text-xs sm:text-sm font-semibold tracking-tight rounded-lg transition-all flex items-center justify-center gap-2 shrink-0 group shadow-md"
                 >
-                  <span>Scan Exposure Free</span>
+                  <Sparkles className="w-4 h-4 text-[#FD8A6B]" />
+                  <span>Analyze Platform Risk</span>
                   <ArrowRight className="w-4 h-4 text-[#FD8A6B] group-hover:translate-x-0.5 transition-transform" />
                 </button>
               </form>
@@ -101,10 +112,6 @@ export function FinalCTASection({ onLaunchDemo }: FinalCTASectionProps) {
                 </p>
               )}
             </div>
-
-            <p className="text-xs text-neutral-500 font-mono">
-              ✓ Instant 30-day historical backfill · Zero credit card required · 100% deterministic arithmetic
-            </p>
           </div>
         </div>
       </div>

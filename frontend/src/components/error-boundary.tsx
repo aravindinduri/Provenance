@@ -1,7 +1,6 @@
 "use client";
 
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
-import * as Sentry from "@sentry/nextjs";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,11 +27,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ErrorBoundary caught an unhandled error:", error, errorInfo);
-    // Send to Sentry if initialized
-    try {
-      Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
-    } catch {
-      // Sentry might not be configured in local dev
+    if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      import("@sentry/nextjs")
+        .then((Sentry) => {
+          Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
+        })
+        .catch(() => {});
     }
   }
 

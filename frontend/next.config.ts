@@ -22,6 +22,20 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  experimental: {
+    optimizePackageImports: ["lucide-react", "@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-select"],
+  },
+
+  webpack: (config, { dev }) => {
+    if (dev) {
+      // Avoid filesystem cache serialization overhead across Docker Windows bind mounts
+      config.cache = {
+        type: "memory",
+      };
+    }
+    return config;
+  },
+
   // Rewrites proxy /api/v1/* to the FastAPI backend during local dev,
   // so the browser never makes cross-origin requests in dev.
   async rewrites() {

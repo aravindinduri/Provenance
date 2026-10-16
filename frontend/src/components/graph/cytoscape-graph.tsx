@@ -427,7 +427,16 @@ export function CytoscapeGraph({
 
     cyRef.current = cy;
 
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+      ro = new ResizeObserver(() => {
+        cy.resize();
+      });
+      ro.observe(containerRef.current);
+    }
+
     return () => {
+      ro?.disconnect();
       cy.destroy();
       cyRef.current = null;
     };

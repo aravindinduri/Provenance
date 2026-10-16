@@ -11,7 +11,7 @@ export function GojiberryLogo({
   className = "",
   size = "md",
   withLink = true,
-}: GojiberryLogoProps) {
+}: GojiberryLogoProps): React.ReactElement {
   const iconSizes = {
     sm: "w-6 h-6",
     md: "w-7 h-7",

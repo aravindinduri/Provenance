@@ -218,12 +218,11 @@ describe("Phase 7 — Supply Chain Graph Visualizer", () => {
     expect(screen.getByRole("link", { name: /Manage Suppliers/i })).toBeInTheDocument();
   });
 
-  it("renders Topology Navigator empty-state guide when no node is selected", async () => {
+  it("does not render Topology Navigator card when no element is selected", async () => {
     render(<GraphPage />);
 
-    expect(screen.getByText("Topology Navigator")).toBeInTheDocument();
-    expect(screen.getByText(/Red nodes: Critical\/High external risk exposure/i)).toBeInTheDocument();
-    expect(screen.getByText(/Purple hexagon: Your organization anchor/i)).toBeInTheDocument();
+    expect(screen.queryByText("Topology Navigator")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Red nodes: Critical\/High external risk exposure/i)).not.toBeInTheDocument();
   });
 
   it("switches layout mode when clicking layout buttons", async () => {

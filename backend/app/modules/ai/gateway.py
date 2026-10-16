@@ -4,7 +4,7 @@ app/modules/ai/gateway.py — LLMGateway (the single choke point for all AI call
 Architecture reference: §C.5, §J.2, §J.3, §Q.7.
 Responsibilities:
   - Model routing by task (entity_resolution, extraction, classification, explanation, investigation)
-  - Pluggable provider resolution (Gemini default, Claude, OpenAI, Mock)
+  - Pluggable provider resolution (Groq default, Gemini, Claude, OpenAI, Mock)
   - Content-hash response caching
   - Per-tenant monthly token budget enforcement (reject with BudgetExceededError)
   - Audit logging to `agent_runs` table with latency, cost, and Langfuse trace link
@@ -121,18 +121,19 @@ class LLMGateway:
 
     def resolve_model_for_task(self, task: str) -> str:
         """Route to appropriate model based on task type."""
+        default_model = getattr(self.provider, "default_model", "openai/gpt-oss-120b")
         task_lower = task.lower()
         if "entity" in task_lower or "resolution" in task_lower:
-            return self.settings.llm_model_entity_resolution or "gemini-1.5-flash"
+            return self.settings.llm_model_entity_resolution or default_model
         elif "extract" in task_lower:
-            return self.settings.llm_model_extraction or "gemini-1.5-flash"
+            return self.settings.llm_model_extraction or default_model
         elif "classif" in task_lower:
-            return self.settings.llm_model_classification or "gemini-1.5-flash"
+            return self.settings.llm_model_classification or default_model
         elif "explain" in task_lower:
-            return self.settings.llm_model_explanation or "gemini-1.5-flash"
+            return self.settings.llm_model_explanation or default_model
         elif "investig" in task_lower:
-            return self.settings.llm_model_investigation or "gemini-1.5-flash"
-        return self.settings.llm_model_extraction or "gemini-1.5-flash"
+            return self.settings.llm_model_investigation or default_model
+        return self.settings.llm_model_extraction or default_model
 
     def _compute_cache_key(self, prompt: str, task: str, model: str) -> str:
         data = f"{task}:{model}:{prompt}".encode("utf-8")
@@ -200,8 +201,11 @@ class LLMGateway:
         finally:
             latency_ms = int((time.monotonic() - start_time) * 1000)
             est_completion_tokens = max(1, len(str(result)) // 4) if result else 0
-            # Gemini Flash is ~$0.075 per 1M input tokens, ~$0.30 per 1M output tokens
-            cost_usd = (est_prompt_tokens * 0.0000001) + (est_completion_tokens * 0.0000003)
+            # Approximate costs: Groq / GPT-OSS 120B ~$0.59/1M input, ~$0.79/1M output; Gemini Flash ~$0.10/$0.30
+            if getattr(self.provider, "name", "") == "groq":
+                cost_usd = (est_prompt_tokens * 0.00000059) + (est_completion_tokens * 0.00000079)
+            else:
+                cost_usd = (est_prompt_tokens * 0.0000001) + (est_completion_tokens * 0.0000003)
 
             # Record token usage for tenant
             if org_id is not None:

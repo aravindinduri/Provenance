@@ -30,10 +30,10 @@ export function UserStoreSync() {
   }, [me, setFromMe]);
 
   useEffect(() => {
-    if (!isSignedIn) {
+    if (!isSignedIn && !me) {
       clear();
     }
-  }, [isSignedIn, clear]);
+  }, [isSignedIn, me, clear]);
 
   return null;
 }

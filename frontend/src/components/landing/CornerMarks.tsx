@@ -18,7 +18,7 @@ export function CornerMarks({
   color = "#c7c7c7",
   thickness = 1,
   offset = -4,
-}: CornerMarksProps) {
+}: CornerMarksProps): React.ReactElement {
   const style = (top?: boolean, left?: boolean): React.CSSProperties => ({
     position: "absolute",
     width: `${size}px`,

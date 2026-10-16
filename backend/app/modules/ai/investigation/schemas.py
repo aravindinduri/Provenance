@@ -25,7 +25,18 @@ class InvestigationQueryRequest(BaseModel):
 
 class InvestigationCitation(BaseModel):
     id: str
-    citation_type: Literal["supplier", "company", "event", "graph_edge", "document"]
+    citation_type: Literal[
+        "supplier",
+        "company",
+        "event",
+        "graph_edge",
+        "document",
+        "material_request",
+        "item",
+        "approval",
+        "rfx",
+        "quotation",
+    ]
     title: str
     details: str
     country: str | None = None
@@ -72,5 +83,5 @@ class InvestigationSuggestion(BaseModel):
     id: str
     title: str
     prompt: str
-    category: Literal["exposure", "disruption", "concentration", "deep_tier"]
+    category: Literal["exposure", "disruption", "concentration", "deep_tier", "procurement"]
     icon: str

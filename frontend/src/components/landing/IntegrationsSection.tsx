@@ -4,11 +4,11 @@ import React from "react";
 import { CornerMarks } from "./CornerMarks";
 import { ProvenanceLogo } from "./ProvenanceLogo";
 
-export function IntegrationsSection() {
+export function IntegrationsSection(): React.ReactElement {
   const tools = [
     {
       name: "SAP S/4HANA",
-      tag: "ERP & POs",
+      tag: "ERP & ITEMS",
       icon: (
         <div className="w-8 h-8 rounded-md bg-[#0070F2]/10 text-[#0070F2] flex items-center justify-center font-bold text-xs">
           SAP
@@ -17,10 +17,19 @@ export function IntegrationsSection() {
     },
     {
       name: "Coupa",
-      tag: "PROCUREMENT",
+      tag: "P2P SUITE",
       icon: (
         <div className="w-8 h-8 rounded-md bg-[#2563EB]/10 text-[#2563EB] flex items-center justify-center font-black text-xs">
           CP
+        </div>
+      ),
+    },
+    {
+      name: "NetSuite",
+      tag: "ERP & POs",
+      icon: (
+        <div className="w-8 h-8 rounded-md bg-[#0284C7]/10 text-[#0284C7] flex items-center justify-center font-bold text-xs">
+          NS
         </div>
       ),
     },
@@ -34,8 +43,8 @@ export function IntegrationsSection() {
       ),
     },
     {
-      name: "OFAC Sanctions",
-      tag: "US TREASURY",
+      name: "OFAC & BIS",
+      tag: "SANCTIONS REGISTERS",
       icon: (
         <div className="w-8 h-8 rounded-md bg-[#DC2626]/10 text-[#DC2626] flex items-center justify-center font-black text-xs">
           SDN
@@ -44,7 +53,7 @@ export function IntegrationsSection() {
     },
     {
       name: "Federal Register",
-      tag: "LEGAL GAZETTE",
+      tag: "LEGAL GAZETTES",
       icon: (
         <div className="w-8 h-8 rounded-md bg-[#D97706]/10 text-[#D97706] flex items-center justify-center font-black text-xs">
           FR
@@ -53,19 +62,10 @@ export function IntegrationsSection() {
     },
     {
       name: "Slack & Teams",
-      tag: "INCIDENTS",
+      tag: "APPROVAL ALERTS",
       icon: (
         <div className="w-8 h-8 rounded-md bg-[#4A154B]/10 text-[#4A154B] flex items-center justify-center font-bold text-xs">
           #
-        </div>
-      ),
-    },
-    {
-      name: "Snowflake",
-      tag: "DATA LAKE",
-      icon: (
-        <div className="w-8 h-8 rounded-md bg-[#29B5E8]/10 text-[#29B5E8] flex items-center justify-center font-bold text-xs">
-          ❄
         </div>
       ),
     },
@@ -75,13 +75,18 @@ export function IntegrationsSection() {
     <section id="integrations" className="py-24 bg-[#FAF9F6] border-b border-neutral-200/60 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {/* Section Header */}
-        <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#0A0A0A] mb-16">
-          Synchronizes with your enterprise <br className="hidden sm:inline" />
-          <span className="text-[#FA651E]">ERP and official registers</span>.
-        </h2>
+        <div data-reveal className="max-w-3xl mx-auto mb-16">
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#0A0A0A] mb-4">
+            Synchronizes with your enterprise <br className="hidden sm:inline" />
+            <span className="text-[#FA651E]">ERP, P2P suites, and official registers</span>.
+          </h2>
+          <p className="text-base text-neutral-600">
+            Bi-directional connectors for catalog sync, PO creation, approval dispatch, and multi-tier sanctions resolution.
+          </p>
+        </div>
 
         {/* Tree Connection Graph Visual */}
-        <div className="relative max-w-4xl mx-auto py-8">
+        <div data-reveal className="relative max-w-4xl mx-auto py-8">
           {/* Top Provenance Hub Node */}
           <div className="relative mx-auto w-28 h-28 rounded-2xl bg-white border border-neutral-200 shadow-md flex items-center justify-center mb-16 group hover:scale-105 transition-transform p-3">
             <CornerMarks size={8} color="#FA651E" thickness={1.2} offset={-4} />
@@ -104,11 +109,12 @@ export function IntegrationsSection() {
             <path d="M400,0 C400,50 740,60 740,110" stroke="#FA651E" strokeWidth="1.2" opacity="0.35" />
           </svg>
 
-          {/* 7 Connected Tool Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-7 gap-4">
+          {/* 7 Connected Tool Cards with Stagger */}
+          <div data-reveal-stagger className="grid grid-cols-2 sm:grid-cols-7 gap-4">
             {tools.map((t) => (
               <div
                 key={t.name}
+                data-reveal-item
                 className="relative bg-white rounded-xl border border-neutral-200 p-4 shadow-sm flex flex-col items-center justify-center text-center hover:border-orange-300 hover:shadow-md transition-all group"
               >
                 <CornerMarks size={6} color="#d4d4d4" thickness={1} offset={-3} />

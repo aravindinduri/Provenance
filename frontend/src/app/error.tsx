@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import * as Sentry from "@sentry/nextjs";
 import { AlertCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -13,10 +12,10 @@ export default function RootError({
   reset: () => void;
 }) {
   useEffect(() => {
-    try {
-      Sentry.captureException(error);
-    } catch {
-      // Local dev fallback
+    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      import("@sentry/nextjs")
+        .then((Sentry) => Sentry.captureException(error))
+        .catch(() => {});
     }
     console.error("Route error boundary captured:", error);
   }, [error]);

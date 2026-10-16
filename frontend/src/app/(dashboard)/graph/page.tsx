@@ -10,7 +10,7 @@ import {
   Building2,
   ExternalLink,
   RefreshCw,
-  Info,
+  X,
   ArrowRight,
   Sparkles,
 } from "lucide-react";
@@ -25,11 +25,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  CytoscapeGraph,
+import dynamic from "next/dynamic";
+import type {
   GraphNodeData,
   GraphEdgeData,
 } from "@/components/graph/cytoscape-graph";
+
+const CytoscapeGraph = dynamic(
+  () => import("@/components/graph/cytoscape-graph").then((mod) => mod.CytoscapeGraph),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center bg-white/50">
+        <div className="flex items-center gap-2.5 text-xs text-neutral-500 font-mono">
+          <RefreshCw className="h-4 w-4 animate-spin text-[#FA651E]" />
+          <span>LOADING GRAPH ENGINE...</span>
+        </div>
+      </div>
+    ),
+  }
+);
 import { useAppAuth } from "@/lib/auth/clerk-adapter";
 
 export default function GraphPage(): React.JSX.Element {
@@ -392,8 +407,8 @@ export default function GraphPage(): React.JSX.Element {
                   key={l}
                   onClick={() => setLayoutName(l)}
                   className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${layoutName === l
-                      ? "bg-purple-600 text-white shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
+                    ? "bg-purple-600 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                     }`}
                 >
                   {l === "dagre" ? "Hierarchy (Dagre)" : l === "cose-bilkent" ? "Clusters (Cose)" : "Radial"}
@@ -405,9 +420,9 @@ export default function GraphPage(): React.JSX.Element {
       </Card>
 
       {/* ── Main Workspace: Cytoscape Canvas & Details Inspector ────── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+      <div className={`grid grid-cols-1 gap-6 ${selectedNode || selectedEdge ? "lg:grid-cols-4" : ""}`}>
         {/* Cytoscape Graph Canvas */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className={`${selectedNode || selectedEdge ? "lg:col-span-3" : "w-full"} space-y-4`}>
           <Card className="relative overflow-hidden border-border/80 shadow-md">
             {isLoading && (
               <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/60 backdrop-blur-xs">
@@ -518,144 +533,151 @@ export default function GraphPage(): React.JSX.Element {
         </div>
 
         {/* Details & Action Inspector */}
-        <div className="space-y-4">
-          {selectedNode ? (
-            <Card className="p-5 border-border/80 shadow-md space-y-4">
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <Badge variant={selectedNode.risk_level?.toLowerCase() === "critical" ? "critical" : "secondary"}>
-                    {selectedNode.type?.toUpperCase()} · TIER {selectedNode.tier ?? "?"}
-                  </Badge>
-                  {selectedNode.country && (
-                    <span className="text-xs font-mono text-muted-foreground">{selectedNode.country}</span>
+        {(selectedNode || selectedEdge) && (
+          <div className="space-y-4">
+            {selectedNode ? (
+              <Card className="p-5 border-border/80 shadow-md space-y-4">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Badge variant={selectedNode.risk_level?.toLowerCase() === "critical" ? "critical" : "secondary"}>
+                      {selectedNode.type?.toUpperCase()} · TIER {selectedNode.tier ?? "?"}
+                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {selectedNode.country && (
+                        <span className="text-xs font-mono text-muted-foreground">{selectedNode.country}</span>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                        onClick={() => setSelectedNode(null)}
+                        title="Close Inspector"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <h3 className="text-base font-bold text-foreground tracking-tight pt-1">
+                    {selectedNode.label}
+                  </h3>
+                  {selectedNode.category && (
+                    <p className="text-xs text-muted-foreground">{selectedNode.category}</p>
                   )}
                 </div>
-                <h3 className="text-base font-bold text-foreground tracking-tight pt-1">
-                  {selectedNode.label}
-                </h3>
-                {selectedNode.category && (
-                  <p className="text-xs text-muted-foreground">{selectedNode.category}</p>
-                )}
-              </div>
 
-              <div className="space-y-2 pt-2 border-t border-border/60 text-xs">
-                {selectedNode.annual_spend_usd != null && selectedNode.annual_spend_usd > 0 && (
+                <div className="space-y-2 pt-2 border-t border-border/60 text-xs">
+                  {selectedNode.annual_spend_usd != null && selectedNode.annual_spend_usd > 0 && (
+                    <div className="flex justify-between py-1">
+                      <span className="text-muted-foreground">Annual Spend:</span>
+                      <span className="font-semibold text-foreground">
+                        ${selectedNode.annual_spend_usd.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">Annual Spend:</span>
+                    <span className="text-muted-foreground">Criticality Level:</span>
                     <span className="font-semibold text-foreground">
-                      ${selectedNode.annual_spend_usd.toLocaleString()}
+                      {selectedNode.criticality ? `${selectedNode.criticality}/5` : "Unrated"}
                     </span>
                   </div>
-                )}
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Criticality Level:</span>
-                  <span className="font-semibold text-foreground">
-                    {selectedNode.criticality ? `${selectedNode.criticality}/5` : "Unrated"}
-                  </span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Single Source:</span>
-                  <span className={`font-semibold ${selectedNode.single_source ? "text-destructive" : "text-foreground"}`}>
-                    {selectedNode.single_source ? "Yes (Vulnerable)" : "No"}
-                  </span>
-                </div>
-                {selectedNode.risk_score != null && (
                   <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">Risk Index:</span>
-                    <span className="font-mono font-semibold text-destructive">
-                      {selectedNode.risk_score.toFixed(1)} / 100
+                    <span className="text-muted-foreground">Single Source:</span>
+                    <span className={`font-semibold ${selectedNode.single_source ? "text-destructive" : "text-foreground"}`}>
+                      {selectedNode.single_source ? "Yes (Vulnerable)" : "No"}
                     </span>
                   </div>
-                )}
-              </div>
+                  {selectedNode.risk_score != null && (
+                    <div className="flex justify-between py-1">
+                      <span className="text-muted-foreground">Risk Index:</span>
+                      <span className="font-mono font-semibold text-destructive">
+                        {selectedNode.risk_score.toFixed(1)} / 100
+                      </span>
+                    </div>
+                  )}
+                </div>
 
-              <div className="space-y-2 pt-3 border-t border-border/60">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full justify-between text-xs"
-                  onClick={() => handleExpandNode(selectedNode)}
-                  disabled={isLoading}
-                >
-                  <span>Expand Dependencies (1 Hop)</span>
-                  <ArrowRight className="h-3 w-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="w-full justify-between text-xs"
-                  onClick={() => handleFindPaths(selectedNode)}
-                  disabled={isTracingPath}
-                >
-                  <span>{isTracingPath ? "Tracing Path..." : "Trace Path to Organization"}</span>
-                  <GitFork className="h-3 w-3" />
-                </Button>
-                {selectedNode.entity_id && (
-                  <Button asChild size="sm" variant="ghost" className="w-full text-xs text-muted-foreground">
-                    <Link href={`/suppliers?search=${encodeURIComponent(selectedNode.label)}`}>
-                      <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                      View Full Dossier
-                    </Link>
+                <div className="space-y-2 pt-3 border-t border-border/60">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full justify-between text-xs"
+                    onClick={() => handleExpandNode(selectedNode)}
+                    disabled={isLoading}
+                  >
+                    <span>Expand Dependencies (1 Hop)</span>
+                    <ArrowRight className="h-3 w-3" />
                   </Button>
-                )}
-              </div>
-            </Card>
-          ) : selectedEdge ? (
-            <Card className="p-5 border-border/80 shadow-md space-y-4">
-              <div className="space-y-1">
-                <Badge variant="outline" className="font-mono text-xs">
-                  RELATIONSHIP EDGE
-                </Badge>
-                <h3 className="text-sm font-bold text-foreground pt-1">
-                  {selectedEdge.relationship_type.replace(/_/g, " ").toUpperCase()}
-                </h3>
-              </div>
-              <div className="space-y-2 pt-2 border-t border-border/60 text-xs">
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Source Entity:</span>
-                  <span className="font-medium text-foreground">{selectedEdge.source}</span>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="w-full justify-between text-xs"
+                    onClick={() => handleFindPaths(selectedNode)}
+                    disabled={isTracingPath}
+                  >
+                    <span>{isTracingPath ? "Tracing Path..." : "Trace Path to Organization"}</span>
+                    <GitFork className="h-3 w-3" />
+                  </Button>
+                  {selectedNode.entity_id && (
+                    <Button asChild size="sm" variant="ghost" className="w-full text-xs text-muted-foreground">
+                      <Link href={`/suppliers?search=${encodeURIComponent(selectedNode.label)}`}>
+                        <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                        View Full Dossier
+                      </Link>
+                    </Button>
+                  )}
                 </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Target Entity:</span>
-                  <span className="font-medium text-foreground">{selectedEdge.target}</span>
-                </div>
-                {selectedEdge.annual_spend_usd && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">Contract Spend:</span>
-                    <span className="font-semibold text-foreground">
-                      ${selectedEdge.annual_spend_usd.toLocaleString()}
-                    </span>
+              </Card>
+            ) : selectedEdge ? (
+              <Card className="p-5 border-border/80 shadow-md space-y-4">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="font-mono text-xs">
+                      RELATIONSHIP EDGE
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      onClick={() => setSelectedEdge(null)}
+                      title="Close Inspector"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
-                )}
-                {selectedEdge.confidence != null && (
-                  <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">Confidence:</span>
-                    <span className="font-mono text-emerald-500">
-                      {(selectedEdge.confidence * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                )}
-              </div>
-            </Card>
-          ) : (
-            <Card className="p-5 border-dashed border-border/80 text-center space-y-3 bg-muted/20">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted mx-auto text-muted-foreground">
-                <Info className="h-5 w-5" />
-              </div>
-              <div className="space-y-1.5 text-left">
-                <h3 className="text-xs font-semibold text-foreground text-center">Topology Navigator</h3>
-                <p className="text-[11px] text-muted-foreground">
-                  Click any company node to inspect connections or trace supply chain paths.
-                </p>
-                <div className="space-y-1 pt-1 text-[11px] text-muted-foreground border-t border-border/40">
-                  <p>• Red nodes: Critical/High external risk exposure</p>
-                  <p>• Purple hexagon: Your organization anchor</p>
-                  <p>• Blue/green links: Direct supplier relationships</p>
+                  <h3 className="text-sm font-bold text-foreground pt-1">
+                    {selectedEdge.relationship_type.replace(/_/g, " ").toUpperCase()}
+                  </h3>
                 </div>
-              </div>
-            </Card>
-          )}
-        </div>
+                <div className="space-y-2 pt-2 border-t border-border/60 text-xs">
+                  <div className="flex justify-between py-1">
+                    <span className="text-muted-foreground">Source Entity:</span>
+                    <span className="font-medium text-foreground">{selectedEdge.source}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-muted-foreground">Target Entity:</span>
+                    <span className="font-medium text-foreground">{selectedEdge.target}</span>
+                  </div>
+                  {selectedEdge.annual_spend_usd && (
+                    <div className="flex justify-between py-1">
+                      <span className="text-muted-foreground">Contract Spend:</span>
+                      <span className="font-semibold text-foreground">
+                        ${selectedEdge.annual_spend_usd.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {selectedEdge.confidence != null && (
+                    <div className="flex justify-between py-1">
+                      <span className="text-muted-foreground">Confidence:</span>
+                      <span className="font-mono text-emerald-500">
+                        {(selectedEdge.confidence * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ) : null}
+          </div>
+        )}
       </div>
     </div>
   );
