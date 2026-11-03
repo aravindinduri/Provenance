@@ -105,28 +105,6 @@ provenance/
 └── scripts/           seed_dev_data.py, verify_sources.py
 ```
 
-## Implementation phases
-
-| Phase | Status | Description |
-|---|---|---|
-| 1 | ✅ Complete | Project setup, Docker Compose, `/health`, CI |
-| 2 | Pending | Full DB schema + Alembic migrations + RLS |
-| 3 | Pending | Clerk auth, tenant context, RBAC |
-| 4 | Pending | Backend CRUD APIs (orgs, companies, suppliers, relationships) |
-| 5 | Pending | Frontend shell + generated API client |
-| 6 | Pending | Onboarding wizard + CSV bulk upload |
-| 7 | Pending | Graph traversal + Cytoscape visualization |
-| 8 | Pending | Data ingestion (9 Tier-1 connectors) |
-| 9 | Pending | Entity resolution cascade + review queue |
-| 10 | Pending | AI analysis (event extraction, RAG, semantic dedupe) |
-| 11 | Pending | Deterministic risk scoring engine |
-| 12 | Pending | Alerts with evidence chains + explanation agent |
-| 13 | Pending | Notifications (email + in-app + digest batching) |
-| 14 | Pending | Document ingestion + spend leakage detection |
-| 14b | Pending | Should-cost & price-claim check (FRED/ECB/World Bank) |
-| 15 | Pending | Admin portal + full observability |
-| 16 | Pending | Security hardening |
-| 17 | Pending | Test completion + load testing |
 | 18 | Pending | Terraform deployment + CI/CD to production |
 
 ## Engineering rules enforced by tooling
